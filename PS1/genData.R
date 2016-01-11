@@ -9,7 +9,12 @@ library(rgl)
 # genData generates data from vertices of 3-d cube
 # with alternating classifications of 0 and 1
 #
-genData <- function(n = 100, min.vertex = 1, max.vertex = 2, var = 0.05) {
+genData <- function(n = 100,
+                    min.vertex = 1,
+                    max.vertex = 2,
+                    var = 0.05,
+                    write.csv = TRUE,
+                    save.pdf = TRUE) {
   # shorthand
   minv <- min.vertex
   maxv <- max.vertex
@@ -45,16 +50,12 @@ genData <- function(n = 100, min.vertex = 1, max.vertex = 2, var = 0.05) {
   }
   
   df <- data.frame(rbind(zeroes, ones))
+  if (write.csv == TRUE) write.table(df, file = "dataset.csv", row.names = FALSE)
+  if (save.pdf == TRUE) {
+    plot3d(df[,1:3], radius = 0.05, type='s', col = df[,4]+2)
+    rgl.postscript("dataPlot.pdf","pdf")
+  }
   df
 }
 
-df <- genData(1000, min.vertex = 0, max.vertex = 4, var = 0.5)
-setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/PS1/')
-write.table(df, file = "dataset.csv", row.names = FALSE)
-
-plot3d(df[,1:3], radius = 0.05, type='s', col = df[,4]+2)
-rgl.postscript("dataPlot.pdf","pdf")
-
-# TODO: Randomly draw from 0 and 1's,
-# for zeroes probability of being classified as 0 is high
-# and for ones vice versa
+#genData(500, min.vertex = 0, max.vertex = 4, var = 0.5)
