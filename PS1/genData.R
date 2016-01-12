@@ -9,6 +9,15 @@ library(rgl)
 # genData generates data from vertices of 3-d cube
 # with alternating classifications of 0 and 1
 #
+# Arguments:
+# `n`: (approximate) number of observations per vertex
+# `min.vertex` and `max.vertex`:
+#   - The lower corner of the cube is given by (min.vertex, min.vertex, min.vertex)
+#   - The upper corner of the cube is given by (max.vertex, max.vertex, max.vertex)
+# `var`: variance for each vertex
+# `write.csv`: boolean whether to save data points to `dataset.csv`, defaults to TRUE
+# `save.pdf`: boolean whether to save 3Dplot to pdf, defaults to TRUE
+#
 genData <- function(n = 100,
                     min.vertex = 1,
                     max.vertex = 2,
@@ -19,7 +28,6 @@ genData <- function(n = 100,
   minv <- min.vertex
   maxv <- max.vertex
 
-  # Each 0 should have a 25% of being from 4 distributions
   numCenters <- 4
   m <- 4 # 3 features + 1 output
   
@@ -58,4 +66,5 @@ genData <- function(n = 100,
   df
 }
 
-#genData(500, min.vertex = 0, max.vertex = 4, var = 0.5)
+# Example:
+# genData(500, min.vertex = 0, max.vertex = 4, var = 0.5)
