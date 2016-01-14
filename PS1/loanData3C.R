@@ -41,10 +41,14 @@ loanData <- function(noApproved, noUndecided, noDenied,
   return(loanDf)
 }
 
-# Function to generate a data frame, run 1 of K discriminant model
-# Generate predictions, write dataset to file and generate plot
+# `predictLoanApprovals`
+# - generates a loan data frame as training data,
+# - runs 1 of K discriminant model,
+# - generates predictions
+# - writes dataset with predictions to csv file
+# - generates plot with decision boundaries
 #
-generateLoanData <- function(noApproved, noUndecided, noDenied,
+predictLoanApprovals <- function(noApproved, noUndecided, noDenied,
                     muApproved, muUndecided, muDenied,
                     sdApproved, sdUndecided, sdDenied,
                     rhoApproved, rhoUndecided, rhoDenied,
@@ -127,7 +131,7 @@ rhoApproved <- -0.5
 rhoUndecided <- -0.3
 rhoDenied <- 0.3
 
-generateLoanData(noApproved, noUndecided, noDenied,
+predictLoanApprovals(noApproved, noUndecided, noDenied,
         muApproved, muUndecided, muDenied,
         sdApproved, sdUndecided, sdDenied,
         rhoApproved, rhoUndecided, rhoDenied)
