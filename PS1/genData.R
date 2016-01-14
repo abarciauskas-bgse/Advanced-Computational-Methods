@@ -67,4 +67,4 @@ genData <- function(n = 100,
 }
 
 # Example:
-# genData(500, min.vertex = 0, max.vertex = 4, var = 0.5)
+# genData(100, min.vertex = 0, max.vertex = 4, var = 0.5)
