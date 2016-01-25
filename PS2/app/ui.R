@@ -42,12 +42,12 @@ shinyUI(fluidPage(
                        "Mean Solvency Denials",
                        min = 1,
                        max = 200,
-                       value = 80),
+                       value = 100),
            sliderInput("mean.piratio.denied",
                        "Mean PI Ratio Denials",
                        min = 1,
                        max = 15,
-                       value = 9),
+                       value = 5),
            sliderInput("sd.solvency.denied",
                        "Std Dev Solvency Denials",
                        min = 1,
@@ -68,7 +68,8 @@ shinyUI(fluidPage(
 
     # Plot in the rest of the space
     column(8,
-      plotOutput("distPlot")
+      plotOutput("distPlot"),
+      dataTableOutput("confMatrix")
     )
   )
 ))
