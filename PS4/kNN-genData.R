@@ -1,4 +1,5 @@
-setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/PS4/')
+# REMOVE
+# setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/PS4/')
 
 genSun <- function(n = 200, 
                    features = 2, 
@@ -75,14 +76,42 @@ genSun <- function(n = 200,
   return(new.phi)
 }
 
-data <- genSun()
+data <- genSun(saveData = FALSE, savePlot = FALSE)
 source('kNN.R')
 trainResults <- kNN(X=data[,1:2], y=data[,3], k=2, p=2)
-head(trainResults$predLabels)
-head(data[,3])
-head(trainResults$prob)
 
-# accuracy
-trainResults$errorCount
-trainResults$accuracy
+# generate predictions.csv file with the original dataset and two additional columns 
+# predLabels and prob
+data.with.preds <- cbind(data, prediction=trainResults$predLabels, probability=trainResults$prob)
+write.csv(data.with.preds, file = 'predictions.csv', row.names = FALSE)
+cat('Saved file:', paste0(getwd(), '/predictions.csv'), '\n')
 
+unlink('plot.pdf')
+cairo_pdf('plot.pdf')
+# Create decision boundary
+#
+# Create grid of values
+min.x1 <- min(data$x1)-0.5
+max.x1 <- max(data$x1)+0.5
+min.x2 <- min(data$x2)-0.5
+max.x2 <- max(data$x2)+0.5
+lgrid <- expand.grid(x1=seq(min.x1, max.x1, by=0.05),
+                     x2=seq(min.x2, max.x2, by=0.05))
+
+# Predict grid of values
+knn.pred.grid <- kNN(lgrid, data[,'y'], train.set=data[,c('x1','x2')], type = 'predict')
+knn.predictions = knn.pred.grid$predLabels # 1 2 3
+
+# Make contour using grid of values
+pl = seq(min.x1, max.x1, by=0.05)
+pw = seq(min.x2, max.x2, by=0.05)
+probs <- matrix(knn.predictions, length(pl), 
+                length(pw))
+
+pdf('plot.pdf')
+contour(pl, pw, probs, labels="", xlab="", ylab="", main=
+          "X-nearest neighbour", axes=FALSE)
+# plot data points
+points(data$x1, data$x2, col=data$y)
+dev.off()
+cat('Saved plot:', paste0(getwd(), '/plot.pdf'), '\n')
