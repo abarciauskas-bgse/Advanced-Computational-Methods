@@ -61,8 +61,8 @@ k <- 1  # odd number
 p <- 2  # Manhattan (1), Euclidean (2) or Chebyshev (Inf)
 
 # training 
-X = dataset[,1:2]
-y = dataset[,4]
+features = dataset[,1:2]
+label = dataset[,4]
 trainResults <- kNN(features = X, labels = dataset[,4], 
                     k = k, p = p, type = "train")
 head(trainResults$predLabels)
@@ -73,7 +73,7 @@ trainResults$errorCount
 trainResults$accuracy
 
 # test
-testResults <- kNN(X = datasetTest[,1:2], y = dataset[,4], 
+testResults <- kNN(features = datasetTest[,1:2], labels = dataset[,4], 
                    train.set = dataset[,1:2], 
                    k = k, p = p, type = "predict")
 

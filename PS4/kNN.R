@@ -6,6 +6,10 @@ if (!require('ggplot2')) install.packages('ggplot2')
 library(ggplot2)
 if (!require('assertthat')) install.packages('assertthat')
 library(assertthat)
+if (!require('Rcpp')) install.packages('Rcpp')
+library(Rcpp)
+
+Rcpp::sourceCpp('distance.cpp')
 
 my.mode <- function(x) {
   ux <- unique(x)
@@ -66,8 +70,7 @@ kNN <- function(features, labels, train.set = NULL,
             #
             if (p %in% c(1,2)) {
                 # computes the by-row (i.e. by-observation) distance from x.current (which is has index obs.idx)
-                distMatrix[obs.idx, ] <- (rowSums((abs(features - 
-                                      x.current.expanded))^p) )^(1/p)
+                distMatrix[obs.idx, ] <- calcDist(as.matrix(features), x.current.expanded, p)
             } else if (p==Inf) {
                 distMatrix[obs.idx, ] <- apply(abs(features - x.current.expanded), 1, max)
             }  
