@@ -89,8 +89,7 @@ kNN <- function(features, labels, train.set = NULL,
 
             # computing distances between the probe and exemplars in the train.set
             if (p %in% c(1,2)) {
-                distMatrix[obs.idx, ] <- (rowSums((abs(train.set - 
-                                      x.current.expanded))^p) )^(1/p)
+                distMatrix[obs.idx, ] <- calcDist(as.matrix(train.set), x.current.expanded, p)
             } else if (p==Inf) {
                 distMatrix[obs.idx, ] <- apply(abs(train.set - x.current.expanded), 1, max)
             }  

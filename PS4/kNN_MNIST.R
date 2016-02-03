@@ -33,8 +33,9 @@ numbers.train <- data.train.sample[,1]
 numbers.test <- data.test.sample[,1]
 res <- knn(train = X.train, test = X.test, cl = numbers.train)
 
-# optimize over k
 success.rate(res, numbers.test)
+
+# optimize over k
 ks <- c(1,3,10,50,100)
 ks.results <- list()
 
@@ -56,6 +57,6 @@ train.X <- data.train[,2:ncol(data.train)]
 train.class <- data.train[,1]
 res <- knn(train = train.X, test = data.test, cl = train.class, k = 1)
 filename <- 'MNIST_predictions.csv'
-# setwd('../../../Advanced Computational Methods/PS4/')
+
 write.csv(as.vector(res), file=filename, row.names = FALSE)
 print(paste('Saved file:', paste0(getwd(), '/', filename)))

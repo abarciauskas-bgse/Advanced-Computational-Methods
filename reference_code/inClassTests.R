@@ -62,8 +62,8 @@ p <- 2  # Manhattan (1), Euclidean (2) or Chebyshev (Inf)
 
 # training 
 features = dataset[,1:2]
-label = dataset[,4]
-trainResults <- kNN(features = X, labels = dataset[,4], 
+labels = dataset[,4]
+trainResults <- kNN(features = features, labels = labels,
                     k = k, p = p, type = "train")
 head(trainResults$predLabels)
 head(trainResults$prob)
@@ -96,13 +96,13 @@ p <- 2
 errorTrain <- errorTest <- rep(NA, length(k))
 for (iter in 1:length(k)) {
   # get the training error
-  errorTrain[iter] <- 1 - kNN(X = dataset[,1:2], 
-                              y = dataset[,4], 
+  errorTrain[iter] <- 1 - kNN(features = dataset[,1:2],
+                              labels = dataset[,4],
                               k = k[iter], p = p, 
                               type = "train")$accuracy
   # get the test error
-  predLabels <- kNN( X = datasetTest[,1:2], 
-                     y = dataset[,4],
+  predLabels <- kNN( features = datasetTest[,1:2],
+                     labels = dataset[,4],
                      train.set = dataset[,1:2], 
                      k = k[iter], p = p, 
                      type = "predict")$predLabels
