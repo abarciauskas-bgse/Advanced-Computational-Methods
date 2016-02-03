@@ -61,7 +61,9 @@ k <- 1  # odd number
 p <- 2  # Manhattan (1), Euclidean (2) or Chebyshev (Inf)
 
 # training 
-trainResults <- kNN(X = dataset[,1:2], y = dataset[,4], 
+X = dataset[,1:2]
+y = dataset[,4]
+trainResults <- kNN(features = X, labels = dataset[,4], 
                     k = k, p = p, type = "train")
 head(trainResults$predLabels)
 head(trainResults$prob)
