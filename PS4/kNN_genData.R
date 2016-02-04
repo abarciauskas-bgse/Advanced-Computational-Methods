@@ -75,11 +75,11 @@ genSun <- function(n = 200,
 
 data <- genSun(saveData = FALSE, savePlot = FALSE)
 source('kNN.R')
-trainResults <- kNN(X=data[,1:2], y=data[,3], k=2, p=2)
+trainResults <- kNN(features=data[,1:2], labels=data[,3], k=2, p=2)
 
 # generate predictions.csv file with the original dataset and two additional columns 
 # predLabels and prob
-data.with.preds <- cbind(data, prediction=trainResults$predLabels, probability=trainResults$prob)
+data.with.preds <- cbind(data, predLabels=trainResults$predLabels, prob=trainResults$prob)
 write.csv(data.with.preds, file = 'predictions.csv', row.names = FALSE)
 cat('Saved file:', paste0(getwd(), '/predictions.csv'), '\n')
 
@@ -96,7 +96,7 @@ lgrid <- expand.grid(x1=seq(min.x1, max.x1, by=0.05),
                      x2=seq(min.x2, max.x2, by=0.05))
 
 # Predict grid of values
-knn.pred.grid <- kNN(lgrid, data[,'y'], train.set=data[,c('x1','x2')], type = 'predict')
+knn.pred.grid <- kNN(features=lgrid, labels=data[,'y'], train.set=data[,c('x1','x2')], type = 'predict')
 knn.predictions = knn.pred.grid$predLabels # 1 2 3
 
 # Make contour using grid of values
@@ -107,7 +107,7 @@ probs <- matrix(knn.predictions, length(pl),
 
 pdf('plot.pdf')
 contour(pl, pw, probs, labels="", xlab="", ylab="", main=
-          "X-nearest neighbour", axes=FALSE)
+          "mlbench.circle with Nearest Neighbor Decision Boundary", axes=FALSE)
 # plot data points
 points(data$x1, data$x2, col=data$y)
 dev.off()
