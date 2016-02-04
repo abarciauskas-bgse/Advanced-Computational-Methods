@@ -1,6 +1,3 @@
-# REMOVE
-# setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/PS4/')
-
 genSun <- function(n = 200, 
                    features = 2, 
                    seed = NA, mus = NULL, sigma = NULL,

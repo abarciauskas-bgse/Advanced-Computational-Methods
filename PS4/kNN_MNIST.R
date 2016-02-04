@@ -18,7 +18,7 @@ success.rate <- function(predictions, actual) {
   return (1 - errors/length(actual))
 }
 
-data.train <- read.csv('MNIST_training.csv')
+data.train <- read.csv('../data/MNIST_training.csv')
 
 # test with some data
 # FIXME: Call it `validation`
@@ -52,7 +52,7 @@ for (i in 1:length(ks)) {
 
 # save a csv file named MNIST_predictions.csv with a single column
 # predicted labels for each observation in the MNIST_test.csv file
-data.test <- read.csv('MNIST_test.csv')
+data.test <- read.csv('../data/MNIST_test.csv')
 train.X <- data.train[,2:ncol(data.train)]
 train.class <- data.train[,1]
 res <- knn(train = train.X, test = data.test, cl = train.class, k = 1)
