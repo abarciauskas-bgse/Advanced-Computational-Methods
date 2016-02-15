@@ -5,7 +5,7 @@ setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/data/')
 source('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/datasets/MNIST/displayDigit.R')
 
 digits <- read.csv('MNIST_training.csv')
-digit <- digits[14,]
+digit <- digits[27,]
 (label <- as.numeric(digit[1]))
 
 features <- as.numeric(digit[2:ncol(digit)])
@@ -75,10 +75,10 @@ white.pixels.thinned <- white.pixels
 plot(white.pixels, pch=19)
 plot.point(current.point, color = 'blue')
 visited <- matrix(data = white.pixels[1,], nrow=1,ncol=2)
-thin.points <- function(current.point) {
+thin.points <- function(current.point, animation = FALSE) {
   if (!is.na(current.point['x'])) {
     plot.point(current.point, color = 'blue')
-    Sys.sleep(0.2)
+    if (animation) Sys.sleep(0.2)
     visited <<- rbind(visited, current.point)
     print(nrow(visited))
     print(nrow(white.pixels.thinned))
@@ -90,7 +90,7 @@ thin.points <- function(current.point) {
     four.corners <- eight.neighbors.position[5:8,]
     apply(four.corners, 1, plot.point, color = 'yellow')
     apply(four.nwse, 1, plot.point, color = 'orange')
-    Sys.sleep(0.2)
+    if (animation) Sys.sleep(0.2)
     (four.neighbors.nwse <- ordered.distances[2:5] == 1)
     (four.neighbors.corners <- ordered.distances[6:9] == sqrt(2))
     # Delete if two foreground neighbors or surrounded
@@ -99,7 +99,7 @@ thin.points <- function(current.point) {
       position <- row.match(current.point,white.pixels.thinned)
       if (!is.na(position)) {
         plot.point(white.pixels.thinned[position,], color = 'red')
-        Sys.sleep(0.2)
+        if (animation) Sys.sleep(0.2)
         # only do this if it's not creating a SCHISM
         # e.g. if it's breaking a line btw two corners
         # KEEP IF 
@@ -109,13 +109,27 @@ thin.points <- function(current.point) {
         right <- row.match(current.point+c(1,0), white.pixels.thinned)
         bottom <- row.match(current.point-c(0,1), white.pixels.thinned)
         top <- row.match(current.point+c(0,1), white.pixels.thinned)
-        # COULD BE IMPROVED BY KEEPING A LINE INTACT
-        if (!(is.na(left) && is.na(right)) && !(is.na(top) && is.na(bottom))) {
+        top.left <- row.match(current.point-c(1,-1), white.pixels.thinned)
+        top.right <- row.match(current.point+c(1,1), white.pixels.thinned)
+        bottom.left <- row.match(current.point-c(1,1), white.pixels.thinned)
+        bottom.right <- row.match(current.point+c(1,-1), white.pixels.thinned)
+
+        # being on the edge means the current point has a min or max y or x value
+        min.x <- min(white.pixels[,1])
+        min.y <- min(white.pixels[,2])
+        max.x <- max(white.pixels[,1])
+        max.y <- max(white.pixels[,2])
+        (on.the.edge <- (current.point[1] == min.x || current.point[1] == max.x || current.point[2] == min.y || current.point[2] == max.y))
+
+        if (!(is.na(left) && is.na(right)) &&
+          !(is.na(top) && is.na(bottom)) &&
+          !(is.na(top.left) && is.na(bottom.right)) &&
+          !(is.na(top.right) && is.na(bottom.left))) {
           white.pixels.thinned <<- white.pixels.thinned[-position,]
         }
 
         plot(white.pixels.thinned,pch=19)
-        Sys.sleep(0.2)
+        if (animation) Sys.sleep(0.2)
         nrow(white.pixels.thinned)
         # move to a neighbor
       }
@@ -135,6 +149,22 @@ thin.points <- function(current.point) {
   white.pixels.thinned
 }
 wp <- thin.points(current.point)
-plot(wp, pch = 19)
+
+# go throuh pixels row and column
+# keep if in thinned points
+white.pixels.thinned.2 <- white.pixels.thinned
+white.pixels.thinned.2[,2] <- white.pixels.thinned[,2] - min(white.pixels.thinned.2[,2])
+pixels.thinned <- pixels
+for (ridx in 1:nrow(pixels)) {
+  for (cidx in 1:ncol(pixels)) {
+    if (is.na(row.match(c(ridx,cidx), white.pixels.thinned.2))) {
+      pixels.thinned[ridx,cidx] <- -1.0
+    }
+  }
+}
+
+features.new <- as.numeric(pixels.thinned)
+displayDigit(features.new, label, newDevice = FALSE)
+
 
 
