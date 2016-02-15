@@ -5,7 +5,7 @@ setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/data/')
 source('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/datasets/MNIST/displayDigit.R')
 
 digits <- read.csv('MNIST_training.csv')
-digit <- digits[12,]
+digit <- digits[14,]
 (label <- as.numeric(digit[1]))
 
 features <- as.numeric(digit[2:ncol(digit)])
@@ -104,13 +104,12 @@ thin.points <- function(current.point) {
         # e.g. if it's breaking a line btw two corners
         # KEEP IF 
         #  - If 1 and 3 of nwse are both missing OR
-        #  - If 2 and 4 of nwse are both missing OR
-        #  - If 1 and 3 of corners are both missing OR
-        #  - If 2 and 4 of corners are both missing
+        #  - If 2 and 4 of nwse are both missing
         left <- row.match(current.point-c(1,0), white.pixels.thinned)
         right <- row.match(current.point+c(1,0), white.pixels.thinned)
         bottom <- row.match(current.point-c(0,1), white.pixels.thinned)
         top <- row.match(current.point+c(0,1), white.pixels.thinned)
+        # COULD BE IMPROVED BY KEEPING A LINE INTACT
         if (!(is.na(left) && is.na(right)) && !(is.na(top) && is.na(bottom))) {
           white.pixels.thinned <<- white.pixels.thinned[-position,]
         }
