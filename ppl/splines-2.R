@@ -8,7 +8,6 @@ digits <- read.csv('MNIST_training.csv')
 digit <- digits[12,]
 (label <- as.numeric(digit[1]))
 
-# 2. the rest are pixel intensities for 16x16 image of digits
 features <- as.numeric(digit[2:ncol(digit)])
 
 # displaying the digit
@@ -33,75 +32,6 @@ colnames(white.pixels) <- c('x','y')
 plot(white.pixels, pch = 19)
 
 dist.from.origin <- (white.pixels[,1] - white.pixels[,2])**2
-
-# Find the start position
-start.px.idx <- which.min(dist.from.origin)
-start.point <- white.pixels[start.px.idx,]
-# remove min
-white.pixels.start.removed <- white.pixels[setdiff(1:nrow(white.pixels), start.px.idx),]
-
-# add points to matrix for each stroke
-points <- matrix(data = start.point, ncol = 2, nrow = 1)
-
-add.points <- function(stoke.points, points.matrix, current.direction) {
-  start <- points[-1,]
-  distances <- apply(points.matrix, 1, function(x) { distance(start, x)})
-  others.orderedby.proximity <- points.matrix[order(distances, decreasing = FALSE),]
-  
-  directions <- apply(others.orderedby.proximity[1:4,], 1, angle, start)
-  direction <- rad2deg(my.mode(directions))
-  
-  # figure out which direction we really want
-  if (direction > 0 & direction < 45) {
-    direction.new <- 'right'
-    # if direction is different, break
-  } else if (direction >= 45 & direction <= 135) {
-    direction.new <- 'up'
-  } else if (direction > 135 & direction < 225) {
-    direction.new <- 'left'
-  } else if (direction >= 225) {
-    direction.new <- 'down'
-  }
-  
-  if (direction.new != direction.current) {
-    
-  } else {
-    # add new point
-    # add neigbor in that direction
-    
-    # recurse
-    add.points(stroke.points)
-  }
-}
-# Find the direction of neighbors, adding points to the current stroke
-# Build the stroke until most neighbors switch direction
-# then start a new spline in that direction
-create.skeleton <- function(points, points.matrix) {
-  # neighbors will be all the nearest points
-  # point should by an x,y coordinate
-  # points.matrix should be a matrix of x,y coordinates
-  # find 4? nearest neighbors
-  distances <- apply(points.matrix, 1, function(x) { distance(start, x)})
-  others.orderedby.proximity <- points.matrix[order(distances, decreasing = FALSE),]
-  # neighbors touching this guy should have an average direction
-  # if nearest neighbors are all in the same direction, we are in the start position for this storke
-  # if neighbors are indifferent directions, build spline in one direction randomly from the to
-  directions <- apply(others.orderedby.proximity[1:4,], 1, angle, start)
-  (direction <- rad2deg(my.mode(directions)))
-
-  # figure out which direction we really want
-  if (direction > 0 & direction < 45) {
-    start.direction <- 'right'
-    # if direction is different, break
-  } else if (direction >= 45 & direction <= 135) {
-    start.direction <- 'up'
-  } else if (direction > 135 & direction < 225) {
-    start.direction <- 'left'
-  } else if (direction >= 225) {
-    start.direction <- 'down'
-  }
-}
-
 
 my.mode <- function(x) {
   ux <- unique(x)
@@ -140,8 +70,7 @@ direction(point1,point2)
 # and has more than one neighbor, delete it
 # unless
 
-current.index <- 1
-current.point <- white.pixels[current.index,]
+current.point <- white.pixels[1,]
 white.pixels.thinned <- white.pixels
 plot(white.pixels, pch=19)
 plot.point(current.point, color = 'blue')
@@ -153,14 +82,18 @@ thin.points <- function(current.point) {
     visited <<- rbind(visited, current.point)
     print(nrow(visited))
     print(nrow(white.pixels.thinned))
-    # find 4 nearest neighbors
-    #plot.point(current.point, color = 'blue')
+    # find 8 nearest neighbors
     distances <- apply(white.pixels, 1, function(x) { distance(current.point, x)})
     ordered.distances <- distances[order(distances, decreasing = FALSE)]
-    four.neighbors.position <- white.pixels[order(distances, decreasing = FALSE),][2:5,]
-    apply(four.neighbors.position, 1, plot.point, color = 'green')
+    eight.neighbors.position <- white.pixels[order(distances, decreasing = FALSE),][2:9,]
+    four.nwse <- eight.neighbors.position[1:4,]
+    four.corners <- eight.neighbors.position[5:8,]
+    apply(four.corners, 1, plot.point, color = 'yellow')
+    apply(four.nwse, 1, plot.point, color = 'orange')
     Sys.sleep(0.2)
-    four.neighbors.nwse <- ordered.distances[2:5] == 1
+    (four.neighbors.nwse <- ordered.distances[2:5] == 1)
+    (four.neighbors.corners <- ordered.distances[6:9] == sqrt(2))
+    # Delete if two foreground neighbors or surrounded
     if (sum(four.neighbors.nwse) == 3 || sum(four.neighbors.nwse) == 2) {
       # delete it from thinned
       position <- row.match(current.point,white.pixels.thinned)
@@ -168,14 +101,27 @@ thin.points <- function(current.point) {
         plot.point(white.pixels.thinned[position,], color = 'red')
         Sys.sleep(0.2)
         # only do this if it's not creating a SCHISM
-        white.pixels.thinned <<- white.pixels.thinned[-position,] 
+        # e.g. if it's breaking a line btw two corners
+        # KEEP IF 
+        #  - If 1 and 3 of nwse are both missing OR
+        #  - If 2 and 4 of nwse are both missing OR
+        #  - If 1 and 3 of corners are both missing OR
+        #  - If 2 and 4 of corners are both missing
+        left <- row.match(current.point-c(1,0), white.pixels.thinned)
+        right <- row.match(current.point+c(1,0), white.pixels.thinned)
+        bottom <- row.match(current.point-c(0,1), white.pixels.thinned)
+        top <- row.match(current.point+c(0,1), white.pixels.thinned)
+        if (!(is.na(left) && is.na(right)) && !(is.na(top) && is.na(bottom))) {
+          white.pixels.thinned <<- white.pixels.thinned[-position,]
+        }
+
         plot(white.pixels.thinned,pch=19)
         Sys.sleep(0.2)
         nrow(white.pixels.thinned)
         # move to a neighbor
       }
     }
-    next.pos <- four.neighbors.position
+    next.pos <- four.nwse
     #current.point <- next.pos[sample(nrow(next.pos), 1),]
     #thin.points(current.point, white.pixels.thinned)
     if (nrow(next.pos) > 0) {
