@@ -31,7 +31,9 @@ colnames(white.pixels) <- c('x','y')
 
 plot(white.pixels, pch = 19)
 
-dist.from.origin <- (white.pixels[,1] - white.pixels[,2])**2
+dist.from.origin <- function(white.pixels) {
+  (white.pixels[,1] - white.pixels[,2])**2
+}
 
 my.mode <- function(x) {
   ux <- unique(x)
@@ -163,8 +165,63 @@ for (ridx in 1:nrow(pixels)) {
   }
 }
 
-features.new <- as.numeric(pixels.thinned)
+features.new <- as.numeric(rotate(rotate(pixels.thinned)))
 displayDigit(features.new, label, newDevice = FALSE)
 
 
+# create substrokes
+(current.point <- white.pixels.thinned[order(dist.from.origin(white.pixels.thinned))[1],])
+changes.direction <- 0
+current.stroke.idx <- 1
+strokes <- list(current.point)
+pts.to.be.visited <- white.pixels.thinned
+plot(pts.to.be.visited, pch = 19)
+pts.visited <- c()
+x.threshold <- current.point[1]
+y.threshold <- current.point[2]
+current.direction <- NA
 
+while (length(pts.to.be.visited) > 0) {
+  # remove from points to be visited
+  r <- row.match(current.point, pts.to.be.visited)
+  pts.to.be.visited <- pts.to.be.visited[-r,]
+  plot.point(current.point, color = 'red')
+  Sys.sleep(0.5)
+  # find nearest neighbors
+  print(pts.to.be.visited)
+  distances <- apply(pts.to.be.visited, 1, function(x) { distance(current.point, x)})
+  ordered.distances <- distances[order(distances, decreasing = FALSE)]
+  two.neighbors <- pts.to.be.visited[order(distances, decreasing = FALSE),][2:3,]
+  # if we're just starting the stroke, set current.direction to nearest neighbor
+  if (is.na(current.direction)) {
+    nn <- two.neighbors[1,]
+    plot.point(nn, color = 'yellow')
+    Sys.sleep(0.5)
+    current.direction <- angle(current.point, nn)
+    strokes[[current.stroke.idx]] <- append(strokes[[current.stroke.idx]], nn)
+    current.point <- nn
+  } else {
+    # check if next is in the same direction
+    nn <- two.neighbors[1,]
+    new.direction <- angle(current.point, nn)
+    # if nearest point is in the same direction, no change in direction
+    if (new.direction == current.direction) {
+      strokes[[current.stroke.idx]] <- append(strokes[[current.stroke.idx]], nn)
+      current.point <- nn
+    } else if (ordered.distances[2] <= 2) {
+      # or at a 45 degree angle
+      changes.direction <- changes.direction + 1
+      strokes[[current.stroke.idx]] <- append(strokes[[current.stroke.idx]], nn)
+      current.point <- nn
+    } else {
+      current.stroke.idx <- current.stroke.idx + 1
+      (current.point <- pts.to.be.visited[order(dist.from.origin(pts.to.be.visited))[1],])
+      strokes[[current.stroke.idx]] <- current.point
+    }
+  }
+}
+
+strokes
+
+stroke.1 <- matrix(strokes[[1]], ncol = 2, byrow=TRUE)
+plot(stroke.1,pch=19)
