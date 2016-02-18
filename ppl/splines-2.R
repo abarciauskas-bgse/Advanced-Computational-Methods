@@ -175,9 +175,7 @@ changes.direction <- 0
 current.stroke.idx <- 1
 strokes <- list(current.point)
 pts.to.be.visited <- white.pixels.thinned
-plot(pts.to.be.visited, pch = 19)
-pts.visited <- c()
-x.threshold <- current.point[1]
+plot(pts.to.be.visited, pch = 19)x.threshold <- current.point[1]
 y.threshold <- current.point[2]
 current.direction <- NA
 
