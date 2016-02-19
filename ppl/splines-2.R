@@ -40,15 +40,26 @@ my.mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 distance <- function(point1, point2) {
-  sqrt((point2['x'] - point1['x'])**2 + (point2['y'] - point1['y'])**2)
+  sqrt((point2[1] - point1[1])**2 + (point2[2] - point1[2])**2)
 }
 
 angle <- function(x,y){
   dot.prod <- x%*%y 
-  norm.x <- norm(x,type="2")
-  norm.y <- norm(y,type="2")
+  norm.x <- norm(x)
+  norm.y <- norm(y)
   theta <- acos(dot.prod / (norm.x * norm.y))
   as.numeric(theta)
+}
+
+angle <- function(x, y) {
+  x1 <- x[1]
+  x2 <- x[2]
+  y1 <- y[1]
+  y2 <- y[2]  
+  dot = x1*x2 + y1*y2      # dot product
+  det = x1*y2 - y1*x2      # determinant
+  angle = atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+  return(angle)
 }
 
 rad2deg <- function(rad) {(rad * 180) / (pi)}
@@ -222,4 +233,8 @@ while (length(pts.to.be.visited) > 0) {
 strokes
 
 stroke.1 <- matrix(strokes[[1]], ncol = 2, byrow=TRUE)
+colnames(stroke.1) <- c('x','y')
 plot(stroke.1,pch=19)
+
+plot(white.pixels.thinned, pch = 19)
+apply(stroke.1, 1, plot.point)
