@@ -12,4 +12,4 @@ aws emr create-cluster \
 --log-uri s3://abarciauskas-bgse/log/ \
 --termination-protected
 
-ssh -i ~/.ssh/abarciauskas-bgse-aws.pem -L 9000:localhost:9999 hadoop@ec2-54-229-214-113.eu-west-1.compute.amazonaws.com
+ssh -i ~/.ssh/abarciauskas-bgse-aws.pem -L 9000:localhost:9999 hadoop@ec2-54-194-197-85.eu-west-1.compute.amazonaws.com
