@@ -51,5 +51,5 @@ annotate("rect",
          xmax = intervals[[2]][2], 
          ymin = 0, ymax = 1, alpha = .2)
 
-K <- 2
+K <- 4
 classResults <- cTree(K, data$X, data$Y)

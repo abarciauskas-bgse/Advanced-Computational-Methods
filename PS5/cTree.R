@@ -3,35 +3,6 @@
 # choose the best cut
 # X is a an n x m matrix of a multi-dimensional input
 # Y is a vector of k classes
-# X.distances: matrix of distances
-library(mvtnorm)
-
-euc.dist <- function(x1, x2) sqrt(sum((x1 - x2) ^ 2))
-
-my.mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-miss.error <- function(prob) {
-  miss.error <- 1 - prob
-  return(miss.error)
-}
-
-gini <- function(prob) {
-  gini <- prob*(1-prob)
-  return(gini)
-}
-
-cross.entropy <- function(prob) {
-  cross.entropy <- -prob*log(prob)
-  return(cross.entropy)
-}
-
-prob.k <- function(meank, actual) {
-  length(meank == actual)/length(actual)
-}
-
 findThreshold <- function(X, Y, costFnc = 'Entropy') {
     
     X <- as.matrix(X)
@@ -41,6 +12,10 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
     # splitLabels should hold the labels for each split and feature option
     # Is it okay this has only two options? e.g. each split picks majority on either half?
     splitLabels <- matrix(NA, ncol=2, nrow=noPoints-1)
+    # classes in Y
+    kclasses <- unique(Y)
+    # number of classes in Y
+    nclasses <- length(kclasses)
 
     for (m.idx in 1:ncol(X)) {
       # we go sequentially over each point and cut between that point and threshold
@@ -54,28 +29,69 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
           # check the classification error, when both sides, 
           # are classified with mean label
           predictedClasses <- rep(NA, noPoints)
-          Y.left <- Y[X[,m.idx] < potThres]
-          Y.right <- Y[X[,m.idx] >= potThres]
-          modeLeft <- my.mode(Y.left)
-          modeRight <- my.mode(Y.right)
-          predictedClasses[X[,m.idx] <= potThres] <- modeLeft
-          predictedClasses[X[,m.idx] > potThres] <- modeRight
-          # error of this split
-          # for each side need to calculate the probability of
-          # the mode class being used for classification
-          prob.k.left <- prob.k(modeLeft, Y.left)
-          prob.k.right <- prob.k(modeRight, Y.right)
-          misError <- if (costFnc == 'ME') {
-            miss.error(prob.k.left) + miss.error(prob.k.right)
-          } else if (costFnc == 'Gini') {
-            gini(prob.k.left) + gini(prob.k.right)
-          } else if (costFnc == 'Entropy') {
-            cross.entropy(prob.k.left) + cross.entropy(prob.k.right)
+
+          # depending on the loss function,
+          # take the minimum of the missclassification error for each possible class
+          Y.left <- Y[X[,m.idx] <= potThres]
+          Y.right <- Y[X[,m.idx] > potThres]
+         
+          # calculate the probability for each class
+          class.probs.left <- c()
+          class.probs.right <- c()
+          for (class.idx in 1:nclasses) {
+            k <- kclasses[class.idx]
+            class.probs.left <- append(class.probs.left, sum(Y.left == k)/length(Y.left))
+            class.probs.right <- append(class.probs.right, sum(Y.right == k)/length(Y.right))
           }
+
+          # declare winners for this split
+          max.prob.left <- class.probs.left[which.max(class.probs.left)]
+          left.class <- kclasses[which.max(class.probs.left)]
+          max.prob.right <- class.probs.right[which.max(class.probs.right)]
+          right.class <- kclasses[which.max(class.probs.right)]
+          predictedClasses[X[,m.idx] <= potThres] <- left.class
+          predictedClasses[X[,m.idx] > potThres] <- right.class
+
+          # calculate misError according to the loss function argument
+          # for each of k classes on each side, pick the class which maximizes the information gain
+          misError.left <- NA
+          misError.right <- NA
+          misError <- NA
+
+          if (costFnc == 'ME') {
+            misError.left <- 1 - max.prob.left
+            misError.right <- 1 - max.prob.right
+          } else if (costFnc == 'Gini') {
+            misError.left <- sum(class.probs.left*(1-class.probs.left))
+            misError.right <- sum(class.probs.right*(1-class.probs.right))
+          } else if (costFnc == 'Entropy') {
+            class.probs.left <- sapply(class.probs.left, function(x) {
+              if (x == 1) {
+                x-1e-6
+              } else if (x==0) {
+                x+1e-6
+              } else {
+                x
+              }
+            })
+            class.probs.right <- sapply(class.probs.right, function(x) {
+              if (x == 1) {
+                x-1e-6
+              } else if (x==0) {
+                x+1e-6
+              } else {
+                x
+              }
+            })
+            (misError.left <- -sum(class.probs.left*log(class.probs.left)))
+            (misError.right <- -sum(class.probs.right*log(class.probs.right)))
+          }
+          # should it be this or something else?
+          misError <- misError.left/length(Y.left) + misError.right/length(Y.right)
           
           # recording the accuracy, thresholds and labels of 
           # the splitted interval
-          errors[x.idx,m.idx] <- misError
+          errors[x.idx,m.idx] <- as.numeric(misError)
           thresholds[x.idx,m.idx] <- potThres
           splitLabels[x.idx,] <- c(predictedClasses[X[,m.idx] < potThres][1],
                                    predictedClasses[X[,m.idx] > potThres][1])
@@ -84,8 +100,9 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
     # print(cbind(errors, thresholds, splitLabels))
 
     # next we find the minimum and the best threshold
-    minError <- min(na.omit(errors))
+    minError <- min(errors)
     bestThresholds <- which(errors==minError, arr.ind = TRUE)
+    (bestThresholds <- as.matrix(bestThresholds))
     bestThreshold <- bestThresholds[sample(nrow(bestThresholds),1),]
     # if more than 1 threshold has the same accuracy we choose one randomly
 
@@ -162,9 +179,9 @@ cTree <- function(K, X, Y, minPoints = 1, costFnc = 'Entropy') {
         }
 
         # find the best threshold in this iteration, greedy strategy
-        minError <- min(errors, na.rm=TRUE)
+        (minError <- min(errors))
         bestThreshold <- thresholds[which(errors==minError)]
-        bestThreshold <- sample(bestThreshold, 1)
+        bestThreshold <- bestThreshold[1]
         labels <- splitLabels[which(thresholds==bestThreshold),]
 
         # add the new threshold to our list of boundaries
@@ -176,8 +193,10 @@ cTree <- function(K, X, Y, minPoints = 1, costFnc = 'Entropy') {
             signs <- labels
         } else {
             signs <- append(signs, labels[1], 
-                after=which(boundaries==bestThreshold)-2)
+              # FIX ME
+                after=min(0, which(boundaries==bestThreshold)-2))
             signs[which(boundaries==bestThreshold)] <- labels[2]
+                              print(paste0('labels: ', results$labels))
         }
     }
 
