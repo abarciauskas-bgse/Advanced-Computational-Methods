@@ -21,3 +21,16 @@ plot <- ggplot(data = diamonds.subset, aes(x = depth, y = price, color = cut)) +
   geom_vline(xintercept = res$thres)
 plot
 
+plot <- ggplot(data = iris, aes(x = Petal.Width, y=Sepal.Length, color = Species)) +
+  geom_point()
+plot
+X <- iris[,c('Petal.Width','Sepal.Length')]
+Y <- iris[,'Species']
+res <- findThreshold(X, Y)
+feature.idx <- res$feature
+if (feature.idx == 1) {
+  plot <- plot + geom_vline(xintercept = res$thres) 
+} else if (feature.idx == 2) {
+  plot <- plot + geom_hline(yintercept = res$thres) 
+}
+plot
