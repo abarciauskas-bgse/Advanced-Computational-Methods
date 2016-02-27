@@ -3,7 +3,7 @@
 # choose the best cut
 # X is a an n x m matrix of a multi-dimensional input
 # Y is a vector of k classes
-findThreshold <- function(X, Y, costFnc = 'Entropy') {
+findThreshold <- function(X, Y, current.depth, max.depth, costFnc = 'Entropy') {
   
   X <- as.matrix(X)
   noPoints <- nrow(X)
@@ -12,7 +12,7 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
   thresholds <- matrix(NA, nrow=noPoints, ncol=ncol(X))
   # splitLabels should hold the labels for each split and feature option
   # Is it okay this has only two options? e.g. each split picks majority on either half?
-  splitLabels <- matrix(NA, ncol=2, nrow=noPoints)
+  splitLabels <- matrix(NA, ncol=2, nrow=noPoints*ncol(X))
   # classes in Y
   kclasses <- unique(Y)
   # number of classes in Y
@@ -94,13 +94,19 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
         }
         # should it be this or something else?
         (misError <- misError.left + misError.right)
-        
+        label.left <- NA
+        if (!(misError.left > 0.001) || (current.depth + 1 == max.depth)) {
+          label.left <- predictedClasses[X[,m.idx] <= potThres][1]
+        }
+        label.right <- NA
+        if (!(misError.right > 0.001) || (current.depth + 1 == max.depth)) {
+          label.right <- predictedClasses[X[,m.idx] > potThres][1]
+        }
         # recording the accuracy, thresholds and labels of 
         # the splitted interval
         errors[x.idx,m.idx] <- as.numeric(misError)
         thresholds[x.idx,m.idx] <- potThres
-        splitLabels[x.idx,] <- c(predictedClasses[X[,m.idx] <= potThres][1],
-                                 predictedClasses[X[,m.idx] > potThres][1])
+        splitLabels[(x.idx+m.idx),] <- c(label.left, label.right)
       }           
     }
   # print(cbind(errors, thresholds, splitLabels))
@@ -118,7 +124,7 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
   (best.threshold.feature <- as.numeric(bestThresholds.col['col']))
   
   # what are the final labels of the best split?
-  labels <- splitLabels[bestThresholds.row,]
+  labels <- splitLabels[(bestThresholds.row+best.threshold.feature),]
   
   return(list(thres = best.threshold.splitpoint,
               # split on which feature
@@ -135,16 +141,14 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
 }
 
 findThresholds <- function(X, Y, current.depth = 0, max.depth = 3, thresholds = matrix()) {
-  print(paste0('thresholds: ', thresholds))
   current.depth <- current.depth + 1
 
   if (current.depth > max.depth) {
     return(thresholds)
   } else {
     # find best split for current data
-    res <- findThreshold(X, Y)
-    thresholds <- rbind(thresholds, c(res$thres, res$feature, res$labels[1], res$labels[2]))
-    print(paste('thresholds:',thresholds))
+    res <- findThreshold(X, Y, current.depth, max.depth)
+    thresholds <- rbind(thresholds, c(res$thres, res$feature, res$labels[1], res$labels[2], res$minerror))
 
     # split data
     if (!is.na(res$thres)) {
@@ -157,16 +161,39 @@ findThresholds <- function(X, Y, current.depth = 0, max.depth = 3, thresholds = 
       
       thresholds <- rbind(thresholds, findThresholds(X.right, Y.right, current.depth, max.depth = max.depth, thresholds = thresholds))
       thresholds <- rbind(thresholds, findThresholds(X.left, Y.left, current.depth, max.depth = max.depth, thresholds = thresholds))
+      # FIXME: this recursion builds up dupe thresholds
+      return(unique(thresholds))
     }
-    return(thresholds)
   }
 }
 
 # rows == nthresholds, 2 * each side of initial split for total nodes == 8?
 # 2^max.depth
-thresholds <- matrix(NA, ncol = 4)
 X <- iris[,c('Petal.Width','Sepal.Length')]
 Y <- iris[,'Species']
-res <- findThresholds(X, Y, thresholds = thresholds)
+thresholds <- matrix(NA, ncol = 5)
+new.thresholds <- findThresholds(X, Y, thresholds = thresholds)
+(new.thresholds <- new.thresholds[2:nrow(new.thresholds),])
 
-res <- na.omit(unique(res))
+preds <- rep(NA, length(Y))
+for (i in 1:nrow(new.thresholds)) {
+  (threshold <- new.thresholds[i,])
+  (threshold.value <- new.thresholds[i,1])
+  (feature <- new.thresholds[i,2])
+
+  rhs <- which(X[,feature] > threshold.value)
+  lhs <- which(X[,feature] <= threshold.value)
+  lapply(rhs, function(x) {
+    if (is.na(preds[x])) {
+      preds[x] <<- new.thresholds[i,4]
+    }
+  })
+  lapply(lhs, function(x) {
+    if (is.na(preds[x])) {
+      print(x)
+      print(new.thresholds[i,3])
+      preds[x] <<- new.thresholds[i,3]
+    }
+  })
+}
+
