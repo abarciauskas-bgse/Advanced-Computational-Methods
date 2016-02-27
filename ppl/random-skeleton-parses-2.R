@@ -1,3 +1,4 @@
+if (!require('binhf')) install.packages('binhf')
 # Return the point at relative position [1,8] to the current point
 relative.pt <- function(pixels, current.point, position) {
   pt.idx <- NA
