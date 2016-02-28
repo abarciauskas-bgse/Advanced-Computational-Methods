@@ -31,16 +31,16 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
         # locate a potential threshold, a split between two points
         # we can just go point by point
         (x.feature.value <- X[x.idx,m.idx])
-        (potThres <- x.feature.value)
+        (potThres <- x.feature.value + 1e-6)
         # check the classification error, when both sides, 
         # are classified with mean label
         predictedClasses <- rep(NA, noPoints)
         
         # depending on the loss function,
         # take the minimum of the missclassification error for each possible class
-        (Y.left <- Y[X[,m.idx] < potThres + 1e-6])
+        (Y.left <- Y[X[,m.idx] < potThres])
         (Y.right <- Y[X[,m.idx] >= potThres])
-        
+
         # calculate the probability for each class
         class.probs.left <- c()
         class.probs.right <- c()
@@ -72,19 +72,18 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
           misError.right <- sum(class.probs.right*(1-class.probs.right))
         } else if (costFnc == 'Entropy') {
           class.probs.left <- sapply(class.probs.left, function(x) {
-            if (x == 1) {
+            if (!is.nan(x) && x == 1) {
               x-1e-6
-            } else if (x==0) {
+            } else if (!is.nan(x) && x == 0) {
               x+1e-6
             } else {
               x
             }
           })
           class.probs.right <- sapply(class.probs.right, function(x) {
-
-            if (x == 1) {
+            if (!is.nan(x) && x == 1) {
               x-1e-6
-            } else if (x==0) {
+            } else if (!is.nan(x) && x==0) {
               x+1e-6
             } else {
               x
@@ -109,7 +108,7 @@ findThreshold <- function(X, Y, costFnc = 'Entropy') {
   }
 
   # next we find the minimum and the best threshold
-  (minError <- min(errors))
+  (minError <-  min(na.omit(errors)))
   # row and cols of thresholds which minimized the error
   (bestThresholds <- which(errors==minError, arr.ind = TRUE))
   #(bestThresholds <- as.matrix(bestThresholds))
