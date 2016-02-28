@@ -1,4 +1,4 @@
-#setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/PS5/')
+#setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational methods/PS5/')
 source('findThreshold.R')
 if (!require('formula.tools')) install.packages('formula.tools')
 
@@ -16,12 +16,12 @@ cTree <- function(formula, data, depth = 3, minPoints = 1, costFnc = 'Entropy') 
     for (d in 1:depth) {
       if (length(subregions) == 0) {
         # determine first cut to make
-        first.threshold <- findThreshold(X, Y, costFnc)
+        first.threshold <- findThreshold(X, Y, 'ME')
         # split data
         # add to subregions
-        thres.breaks <- c(min(X[,first.threshold$feature]) - 1e-6,
+        thres.breaks <- c(min(X[,first.threshold$feature]) - 0.001,
                           first.threshold$thres,
-                          max(X[,first.threshold$feature]) + 1e-6)
+                          max(X[,first.threshold$feature]) + 0.001)
         X.first.cuts <- cut(X[,first.threshold$feature], include.lowest = FALSE, thres.breaks)
         subregions <- by(X, X.first.cuts, FUN=I)
         first.cut.left.rows <- as.numeric(rownames(subregions[[1]][1]))
@@ -48,17 +48,15 @@ cTree <- function(formula, data, depth = 3, minPoints = 1, costFnc = 'Entropy') 
           # and there is more than min points in the region
           if ((length(unique(curr.Y)) > 1) && (length(curr.Y) > minPoints)) {
             # split the subregion into two subregions
-            curr.threshold <- findThreshold(curr.X, curr.Y, costFnc)
-            thres.breaks <- c(min(curr.X[,curr.threshold$feature])-1e-6,
+            curr.threshold <- findThreshold(curr.X, curr.Y, 'ME')
+            thres.breaks <- c(min(curr.X[,curr.threshold$feature])-0.001,
                               curr.threshold$thres,
-                              max(curr.X[,curr.threshold$feature])+1e-6)
+                              max(curr.X[,curr.threshold$feature])+0.001)
             X.current.cuts <- cut(curr.X[,curr.threshold$feature],include.lowest = FALSE, thres.breaks)
             curr.subregions <- by(curr.X, X.current.cuts, FUN=I)
             curr.X.left.rows <- as.numeric(rownames(curr.subregions[[1]][1]))
             curr.X.right.rows <- as.numeric(rownames(curr.subregions[[2]][1]))
-            print(paste0('curr x rows: ', curr.X.left.rows))
-            print(paste0('subregionidx:', length(subregions)))
-            print(paste0('ncols: ', ncol(Y.preds.for.this.depth)))
+
             Y.preds.for.this.depth[curr.X.left.rows,subregion.idx] <- curr.threshold$labels[1]
             Y.preds.for.this.depth[curr.X.right.rows,subregion.idx] <- curr.threshold$labels[2]
             Y.preds.current <- Y.preds.for.this.depth[,subregion.idx]
@@ -78,9 +76,9 @@ cTree <- function(formula, data, depth = 3, minPoints = 1, costFnc = 'Entropy') 
         region.to.split <- subregions.for.this.depth[best.thresh.for.depth]
         X.to.split <- subregions[region.to.split][[1]]
         curr.X.rows <- as.numeric(rownames(X.to.split))
-        thres.breaks <- c(min(X.to.split[,curr.threshold$feature])-1e-6,
+        thres.breaks <- c(min(X.to.split[,curr.threshold$feature])-0.001,
                           curr.threshold$thres,
-                          max(X.to.split[,curr.threshold$feature])+1e-6)
+                          max(X.to.split[,curr.threshold$feature])+0.001)
         X.current.cuts <- cut(X.to.split[,curr.threshold$feature],include.lowest = FALSE, thres.breaks)
         curr.subregions <- by(X.to.split, X.current.cuts, FUN=I)
         new.subregions <- subregions
@@ -96,6 +94,5 @@ cTree <- function(formula, data, depth = 3, minPoints = 1, costFnc = 'Entropy') 
       }
     }
 
-    # Now to cut up the data
-    return(list(predLabels = Y.preds, prob = probs))
+  return(list(predLabels = Y.preds, prob = probs))
 }

@@ -6,8 +6,7 @@ head(data)
 
 formula <- as.formula('X1 ~ .')
 
-res <- cTree(formula, data = data, depth = 50)
-table(res$predLabels)
+max.depth <- 20
 
 if (!require('partykit')) install.packages('partykit')
 ctree(formula, data)
@@ -20,14 +19,25 @@ training.data <- data[1:(nobs-test.data.nobs),]
 test.data <- data[((nobs-test.data.nobs)+1):nrow(data),]
 # generate the test error from training using cTree 
 # and add to errors
-max.depth <- 20
-errors <- rep(NA, max.depth)
-for (depth in 1:max.depth) {
+
+errors.party <- rep(NA, max.depth)
+errors.me <- rep(NA, max.depth)
+for (depth in 2:max.depth) {
+  print(paste('depth:', depth))
   model <- ctree(formula, training.data, control = ctree_control(maxdepth = depth))
   preds <- ifelse(predict(model, test.data[,1:(ncol(data)-1)]) > 0.5, 1, 0)
   error.rate <- sum(preds != test.data[,ncol(test.data)])/nrow(test.data)
   print(error.rate)
-  errors[depth] <- error.rate
+  errors.party[depth] <- error.rate
+  
+  res <- cTree(formula, data = data, depth = k)
+  table(res$predLabels)
+  error.rate <- sum(data[,'X1'] != res$predLabels)/length(res$predLabels)
+  print(error.rate)
+  errors.me[depth] <- error.rate
 }
 
-plot(errors, type = 'l', col = 'red', xlab = 'depth', ylab = 'error rate')
+pdf("cTree.pdf")
+plot(errors.party, type = 'l', col = 'red', xlab = 'depth', ylab = 'test error rate')
+lines(errors.me, col = 'blue')
+dev.off()
