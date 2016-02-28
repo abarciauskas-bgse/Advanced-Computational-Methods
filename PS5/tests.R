@@ -5,7 +5,6 @@ plot(data$X[,1], data$X[,2], col = ifelse(data$Y, 'darkred', 'blue'), pch = 19)
 
 source('findThreshold.R')
 library(ggplot2)
-
 plot <- ggplot(data = iris, aes(x = Petal.Width, y=Sepal.Length, color = Species)) +
   geom_point()
 plot
