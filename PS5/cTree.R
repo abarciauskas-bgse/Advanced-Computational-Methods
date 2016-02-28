@@ -56,9 +56,6 @@ cTree <- function(formula, data, depth = 3, minPoints = 1, costFnc = 'Entropy') 
             curr.subregions <- by(curr.X, X.current.cuts, FUN=I)
             curr.X.left.rows <- as.numeric(rownames(curr.subregions[[1]][1]))
             curr.X.right.rows <- as.numeric(rownames(curr.subregions[[2]][1]))
-            print(paste0('curr x rows: ', curr.X.left.rows))
-            print(paste0('subregionidx:', length(subregions)))
-            print(paste0('ncols: ', ncol(Y.preds.for.this.depth)))
             Y.preds.for.this.depth[curr.X.left.rows,subregion.idx] <- curr.threshold$labels[1]
             Y.preds.for.this.depth[curr.X.right.rows,subregion.idx] <- curr.threshold$labels[2]
             Y.preds.current <- Y.preds.for.this.depth[,subregion.idx]

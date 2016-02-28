@@ -1,15 +1,10 @@
-# setwd('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/datasets/Spam')
+#setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/PS5/')
+if (!require('partykit')) install.packages('partykit')
 source('cTree.R')
 
 data <- read.csv('spambase.data')
-head(data)
-
 formula <- as.formula('X1 ~ .')
-
 max.depth <- 20
-
-if (!require('partykit')) install.packages('partykit')
-ctree(formula, data)
 
 # split data into training and test
 # for k in 1:max.depth
