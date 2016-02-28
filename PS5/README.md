@@ -1,0 +1,3 @@
+# Notes
+
+This cTree is currently implemented incorrectly. I was operating under the false assumption that each tree level should be pruned "eagerly", as opposed to the context of the subset of data. This was my misunderstanding of the handout (page 13, Lecture6_CART.pdf, paragraph 2). I started working on a revised edition in [feature/fix_ctree](https://github.com/abarciauskas-bgse/Advanced-Computational-Methods/tree/feature/fix_ctree/PS5) branch but it still has bugs. The change was to be developed through [findThresholds.R](https://github.com/abarciauskas-bgse/Advanced-Computational-Methods/blob/feature/fix_ctree/PS5/findThresholds.R).
