@@ -6,6 +6,7 @@ source('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/d
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/utils.R')
 
 digits <- read.csv('MNIST_training.csv')
+# 1573 is an 8 which looks ok
 digit <- digits[sample(1:nrow(digits),1),]
 (label <- as.numeric(digit[1]))
 

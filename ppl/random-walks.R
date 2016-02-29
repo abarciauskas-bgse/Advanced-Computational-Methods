@@ -1,5 +1,6 @@
 if (!require('splines')) install.packages('splines')
 setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/')
+source('penUpDown.R')
 # Direction taken from:
 # https://github.com/brendenlake/BPL/blob/7413a9724949a9f1af0e53df4a90045436cd60ab/bottomup/initialize/RandomWalker.m
 # % Steps for generating a random walk
@@ -29,27 +30,26 @@ find.singletons <- function(pixels) {
 plot(white.pixels.thinned, pch = 19)
 apply(singletons, 1, plot.point)
 
-# COOL 
+source('penUpDown.R')
+strokes <- list()
+pen_up_down(unvisited, singletons)
+lapply(strokes, length)
 
-plot(white.pixels.thinned, pch = 19)
-
+# for creating splines
 iter <- 1
 max.iter <- 10
 while (iter <= max.iter) {
   iter = iter + 1
 
-  source('../ppl/penUpDown.R')
   plot(white.pixels.thinned, pch = 19)
   unvisited <- white.pixels.thinned
-  strokes <- list()
   stroke.idx <- 1
-  pen_up_down(unvisited, animation = TRUE)
   lapply(strokes, length)
 
   plot(white.pixels.thinned, pch = 19)
   for (i in 1:length(strokes)) {
     if (length(strokes[[i]]) >= 8) {
-      stroke <- matrix(unlist(strokes[[i]]), nrow = length(strokes[[i]]), ncol = 2, byrow = TRUE)
+      stroke <- matrix(unlist(unique(strokes[[i]])), nrow = length(unique(strokes[[i]])), ncol = 2, byrow = TRUE)
   
       apply(stroke, 1, plot.point)
       x <- stroke[,1]
