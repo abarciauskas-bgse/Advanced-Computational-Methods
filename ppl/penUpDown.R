@@ -7,7 +7,7 @@
 # add edge/node inversely proportional to 
 # the number of unvisted paths going from that edge node
 # also if we cross an x or y threshold, we should start a new stroke
-pen_up_down <- function(unvisited, unvisited.singletons, animation = FALSE) {
+pen_up_down <- function(unvisited, unvisited.singletons, strokes, animation = FALSE) {
   current.node <- singletons[sample(nrow(singletons),1),]
 
   # if we have reached the min or max x or y,
@@ -53,28 +53,12 @@ pen_up_down <- function(unvisited, unvisited.singletons, animation = FALSE) {
     # Check if next to visit y or x appears in current stroke but the pair is very far away
     # which implies a loop
     # if (next.to.visit[1] %in% strokes[[stroke.idx]])
-    if (length(strokes[stroke.idx][[1]]) > 1) {
-      for (point.idx in 1:length(strokes[[stroke.idx]])) {
-        point <- strokes[[stroke.idx]][[point.idx]]
-        if ((next.to.visit[1] == point[1]) && abs((next.to.visit[2] - point[2]) >= 6)) {
-          print('x loop found!')
-          plot(white.pixels.thinned, pch = 19)
-          stroke.idx <- stroke.idx + 1
-          break
-        } else if ((next.to.visit[2] == point[2]) && abs((next.to.visit[1] - point[1]) >= 6)) {
-          print('y loop found!')
-          plot(white.pixels.thinned, pch = 19)
-          stroke.idx <- stroke.idx + 1
-          break
-        }
-      }
-    }
 
     # add current node to current stroke
     if (length(strokes[stroke.idx][[1]]) < 1) {
-      strokes[[stroke.idx]] <<- list(current.node)
+      strokes[[stroke.idx]] <- list(current.node)
     } else {
-      strokes[[stroke.idx]] <<- append(strokes[[stroke.idx]], list(current.node))
+      strokes[[stroke.idx]] <- append(strokes[[stroke.idx]], list(current.node))
     }
     
     # unless already exists in another stroke
@@ -85,4 +69,6 @@ pen_up_down <- function(unvisited, unvisited.singletons, animation = FALSE) {
     }
     current.node <- next.to.visit
   }
+  print(length(strokes))
+  return(strokes)
 }
