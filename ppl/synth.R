@@ -7,6 +7,9 @@ source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/util
 
 digits <- read.csv('MNIST_training.csv')
 # 1573 is an 8 which looks ok
+# 189 is a 7 which is better
+# 4032 is a 6 which looks crap
+# 1779 is a 9 which looks better
 digit <- digits[sample(1:nrow(digits),1),]
 (label <- as.numeric(digit[1]))
 
@@ -54,3 +57,4 @@ for (ridx in 1:nrow(pixels)) {
 pixels.thinned <- pixels.thinned[,16:1]
 features.new <- as.numeric(pixels.thinned)
 displayDigit(features.new, label, newDevice = FALSE)
+plot(white.pixels.thinned, pch = 19)
