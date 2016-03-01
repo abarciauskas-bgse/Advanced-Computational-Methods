@@ -24,3 +24,8 @@ x.num <- as.numeric(as.character(x.preds$class)) + rnorm(length(y), mean = 0, sd
 plot(white.pixels.thinned, pch = 19)
 points(x.out, y.num, pch = 19, col = 'blue')
 points(x.num, y.out, pch = 19, col = 'blue')
+
+
+# should transform it in other ways, stretched up and down and in and out
+# basically different variances and variances varying by x,y
+#
