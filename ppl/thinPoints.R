@@ -1,18 +1,16 @@
 thin.points <- function(current.point, animation = FALSE) {
   if (!is.na(current.point['x'])) {
-    plot.point(current.point, color = 'blue')
+    if (animation) plot.point(current.point, color = 'blue')
     if (animation) Sys.sleep(0.2)
     visited <<- rbind(visited, current.point)
-    print(nrow(visited))
-    print(nrow(white.pixels.thinned))
     # find 8 nearest neighbors
     distances <- apply(white.pixels, 1, function(x) { distance(current.point, x)})
     ordered.distances <- distances[order(distances, decreasing = FALSE)]
     eight.neighbors.position <- white.pixels[order(distances, decreasing = FALSE),][2:9,]
     four.nwse <- eight.neighbors.position[1:4,]
     four.corners <- eight.neighbors.position[5:8,]
-    apply(four.corners, 1, plot.point, color = 'yellow')
-    apply(four.nwse, 1, plot.point, color = 'orange')
+    if (animation) apply(four.corners, 1, plot.point, color = 'yellow')
+    if (animation) apply(four.nwse, 1, plot.point, color = 'orange')
     if (animation) Sys.sleep(0.2)
     (four.neighbors.nwse <- ordered.distances[2:5] == 1)
     (four.neighbors.corners <- ordered.distances[6:9] == sqrt(2))
@@ -21,7 +19,7 @@ thin.points <- function(current.point, animation = FALSE) {
       # delete it from thinned
       position <- row.match(current.point,white.pixels.thinned)
       if (!is.na(position)) {
-        plot.point(white.pixels.thinned[position,], color = 'red')
+        if (animation) plot.point(white.pixels.thinned[position,], color = 'red')
         if (animation) Sys.sleep(0.2)
         # only do this if it's not creating a SCHISM
         # e.g. if it's breaking a line btw two corners
@@ -51,7 +49,7 @@ thin.points <- function(current.point, animation = FALSE) {
           white.pixels.thinned <<- white.pixels.thinned[-position,]
         }
         
-        plot(white.pixels.thinned,pch=19)
+        if (animation) plot(white.pixels.thinned,pch=19)
         if (animation) Sys.sleep(0.2)
         nrow(white.pixels.thinned)
         # move to a neighbor

@@ -19,8 +19,8 @@ angle <- function(x, y) {
 
 rad2deg <- function(rad) {(rad * 180) / (pi)}
 
-dist.from.origin <- function(white.pixels) {
-  (white.pixels[,1] - white.pixels[,2])**2
+dist.from.origin <- function(points) {
+  (points[1] - points[2])**2
 }
 
 my.mode <- function(x) {

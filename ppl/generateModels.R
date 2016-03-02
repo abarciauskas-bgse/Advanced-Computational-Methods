@@ -44,6 +44,7 @@ apply(singletons, 1, plot.point)
 
 source('penUpDown.R')
 strokes <- list()
+stroke.idx <- 1
 unvisited <- white.pixels.thinned
 
 for (i in 1:3) {

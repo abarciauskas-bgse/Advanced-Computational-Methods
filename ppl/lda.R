@@ -25,6 +25,8 @@ plot(white.pixels.thinned, pch = 19)
 points(x.out, y.num, pch = 19, col = 'blue')
 points(x.num, y.out, pch = 19, col = 'blue')
 
+# find another digit of the same class to compare
+plot(white.pixels[,'x'], white.pixels[,'y'], pcy = 19)
 
 # should transform it in other ways, stretched up and down and in and out
 # basically different variances and variances varying by x,y

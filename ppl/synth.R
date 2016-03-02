@@ -58,3 +58,5 @@ pixels.thinned <- pixels.thinned[,16:1]
 features.new <- as.numeric(pixels.thinned)
 displayDigit(features.new, label, newDevice = FALSE)
 plot(white.pixels.thinned, pch = 19)
+
+
