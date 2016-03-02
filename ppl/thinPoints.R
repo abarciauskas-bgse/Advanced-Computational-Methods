@@ -1,8 +1,13 @@
-thin.points <- function(current.point, animation = FALSE) {
+thin.points <- function(current.point, white.pixels, visited = NA, animation = FALSE) {
+  if (all(is.na(visited))) {
+    visited <- matrix(data = white.pixels[1,], nrow=1,ncol=2)
+  }
+  white.pixels.thinned <- white.pixels
+
   if (!is.na(current.point['x'])) {
     if (animation) plot.point(current.point, color = 'blue')
     if (animation) Sys.sleep(0.2)
-    visited <<- rbind(visited, current.point)
+    visited <- rbind(visited, current.point)
     # find 8 nearest neighbors
     distances <- apply(white.pixels, 1, function(x) { distance(current.point, x)})
     ordered.distances <- distances[order(distances, decreasing = FALSE)]
@@ -46,7 +51,7 @@ thin.points <- function(current.point, animation = FALSE) {
             !(is.na(top) && is.na(bottom)) &&
             !(is.na(top.left) && is.na(bottom.right)) &&
             !(is.na(top.right) && is.na(bottom.left))) {
-          white.pixels.thinned <<- white.pixels.thinned[-position,]
+          white.pixels.thinned <- white.pixels.thinned[-position,]
         }
         
         if (animation) plot(white.pixels.thinned,pch=19)
@@ -56,16 +61,6 @@ thin.points <- function(current.point, animation = FALSE) {
       }
     }
     next.pos <- four.nwse
-    #current.point <- next.pos[sample(nrow(next.pos), 1),]
-    #thin.points(current.point, white.pixels.thinned)
-    if (nrow(next.pos) > 0) {
-      for (j in 1:nrow(next.pos)) {
-        if (is.na(row.match(next.pos[j,],visited))) {
-          thin.points(next.pos[j,], animation = animation)
-        }
-      }
-      
-    }
   }
-  white.pixels.thinned
+  return(white.pixels.thinned)
 }

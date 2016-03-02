@@ -20,20 +20,23 @@ for (row.idx in 1:nrow(digits)) {
   
   # plot the pixels in the foreground
   white.pixels <- which(pixels > quantile(pixels, probs = c(0.667)), arr.ind = TRUE)
-  white.pixels[,2] <- white.pixels[,2] - max(white.pixels[,2],0)
-  # subtract greatest y value from all y values
-  # so top is now x = 0 and we are in the 4th quadrant of xy
-  colnames(white.pixels) <- c('x','y')
-  
-  current.pt <- white.pixels[1,]
-  white.pixels.thinned <- white.pixels
-  visited <- matrix(data = white.pixels[1,], nrow=1,ncol=2)
-  points <- thin.points(current.pt)
-  
-  all.thinned.ints[[row.idx]] <- list(label=label, num.pixels=length(points), points = points)
+
+  if (!(length(white.pixels[,2]) == 0)) {
+    white.pixels[,2] <- white.pixels[,2] - max(white.pixels[,2],0)
+    # subtract greatest y value from all y values
+    # so top is now x = 0 and we are in the 4th quadrant of xy
+    colnames(white.pixels) <- c('x','y')
+    
+    current.pt <- white.pixels[1,]
+    white.pixels.thinned <- white.pixels
+    visited <- matrix(data = white.pixels[1,], nrow=1,ncol=2)
+    points <- thin.points(current.pt)
+    
+    all.thinned.ints[[row.idx]] <- list(label=label, num.pixels=length(points), points = points)
+  }
 }
 
-# started at 6:23
+# started at 9:37
 #
 int.lengths <- lapply(all.thinned.ints, function(num) {
   c(num$label, num$num.pixels)
@@ -43,7 +46,7 @@ int.lengths.mat <- matrix(unlist(int.lengths), nrow = length(int.lengths), ncol 
 plot(int.lengths.mat[,1], int.lengths.mat[,2], pch = 19)
 
 for (i in 1:10) {
-  plot(all.thinned.ints[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  plot(thinned.ints[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
   Sys.sleep(1)
 }
 #setwd('../ppl/')

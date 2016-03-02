@@ -47,3 +47,34 @@ distances <- function(matrix) {
 }
 
 rotate <- function(x) t(apply(x, 2, rev))
+
+nearest.origin <- function(points) {
+  (dists <- apply(points, 1, dist.from.origin))
+  return(which.min(dists))
+}
+
+nearest.point <- function(point, points, order=1) {
+  current.row <- row.match(point, points)
+  x.distances <- distances(points)[current.row,]
+  ordered.distances <- x.distances[order(x.distances)]
+  nearest.idx <- setdiff(order(x.distances), current.row)[order]
+  return(points[nearest.idx,])
+}
+
+neighbors.directions <- function(point, points) {
+  current.row <- row.match(point, points)
+  x.distances <- distances(points)[current.row,]
+  neighbors <- setdiff(which(x.distances <= sqrt(2)), current.row)
+  neighbors.points <- points[neighbors,]
+  relative.positions <- NA
+  if (length(neighbors) > 1) {
+    relative.positions <- apply(neighbors.points, 1, function(n) {
+      relative.position(point,n)
+    })
+  } else {
+    relative.positions <- relative.position(point, neighbors.points)
+  }
+  directions <- relative.positions
+  return(list(directions = directions, neighbors = neighbors.points))
+}
+

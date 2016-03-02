@@ -1,0 +1,76 @@
+---
+title: "Bayesian Program Learning: MNIST Data Set"
+author: "Aimee Barciauskas & Miquel Torrens"
+date: "March 2, 2016"
+output: pdf_document
+---
+
+Bayesian Programming Learning of Hand-Drawn Integers
+
+[ADD ME: SHOW EXAMPLES]
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+1. Create thinned image
+2. Generate directed path
+
+Directed path enables:
+
+1. New integer generation
+2. Prediction?
+
+## Creating the thinned image
+
+```{r}
+if (!require('grid')) install.packages('grid')
+if (!require('prodlim')) install.packages('prodlim')
+if (!require('igraph')) install.packages('igraph')
+
+setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/data/')
+source('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/datasets/MNIST/displayDigit.R')
+source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/utils.R')
+source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/thinPoints.R')
+source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allThinnedInts.R')
+
+digits <- read.csv('MNIST_training.csv')
+# this takes ... a long time to run on my mac so may want to limit it to 1000 samples which takes <30 seconds
+thinned.ints <- all.thinned.ints(digits, limit = 5000)
+```
+
+Make sure things worked:
+
+```{r}
+for (i in 11:20) {
+  plot(thinned.ints[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  Sys.sleep(1)
+}
+```
+
+Can we compare lengths?
+
+```{r}
+(int.lengths <- lapply(thinned.ints, function(num) {
+  c(num$label, num$num.pixels)
+}))
+
+int.lengths.mat <- matrix(unlist(int.lengths), nrow = length(int.lengths), ncol = 2, byrow = TRUE)
+plot(int.lengths.mat[,1], int.lengths.mat[,2], pch = 19)
+```
+
+Not really.
+
+```{r}
+source('../ppl/addPaths.R')
+source('../ppl/relativePosition.R')
+thinned.ints.with.paths <- generatePaths(thinned.ints[11:20], animation = TRUE)
+plot(thinned.ints.with.paths[[3]]$points, pch = 19)
+points(thinned.ints.with.paths[[3]]$path, pch = 19, col = 'orange')
+```
