@@ -26,7 +26,7 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
     min.x.visited <- FALSE
     max.y.visited <- FALSE
     min.y.visited <- FALSE
-    while (nrow(unvisited) >= 3) {
+    while (!is.null(nrow(unvisited) > 2)) {
       if (animation) {
         plot.point(current.pt, color = 'orange')
         Sys.sleep(sleep.time)
@@ -42,7 +42,7 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
         # check if we should be doing this at all
         new.pt <- nearest.point(current.pt, unvisited)
         current.directions <- neighbors.directions(new.pt, unvisited)
-        current.direction <- median(current.directions$directions)
+        current.direction <- sample(current.directions$directions, 1)
       }
       
       # if still nothing, find new direction
@@ -71,7 +71,10 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
           strokes <- strokes + 1
           # toggle
           #relativity <- ifelse(relativity == 'nearest', 'furthest', 'nearest')
+          # FIXME: we do this in 2-3 places to start / restart
           new.pt <- unvisited[nearorfar.from.origin(unvisited, relativity),]
+          current.directions <- neighbors.directions(new.pt, unvisited)
+          current.direction <- sample(current.directions$directions, 1)
         }
       } 
       

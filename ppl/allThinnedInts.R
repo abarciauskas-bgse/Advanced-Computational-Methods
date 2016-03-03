@@ -22,12 +22,14 @@ all.thinned.ints <- function(digits, limit = NA) {
       # so top is now x = 0 and we are in the 4th quadrant of xy
       colnames(white.pixels) <- c('x','y')
       
-      current.pt <- white.pixels[1,]
-      white.pixels.thinned <- white.pixels
-      #plot(white.pixels, pch = 19)
-      points <- thin.points(current.pt, white.pixels)
-      #points(points, col = 'red', pch = 19)
-      all.thinned.ints[[row.idx]] <- list(label=label, num.pixels=length(points), points = points)
+      iter <- 0
+      max.iter <- 2
+      while (iter < max.iter) {
+        iter <- iter  + 1
+        current.pt <- white.pixels[1,]
+        white.pixels <- thin.points(current.pt, white.pixels)
+      }
+      all.thinned.ints[[row.idx]] <- list(label=label, num.pixels=length(white.pixels), points = white.pixels)
     } else {
       all.thinned.ints[[row.idx]] <- list(label=label, num.pixels=NA)
     }

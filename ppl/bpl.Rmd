@@ -74,7 +74,7 @@ colnames(int.lengths.mat) <- c('label', 'num.pixels')
 
 plot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
 
-boxplot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
+boxplot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.5))
 ```
 
 Looks like we can predict based on length a bit.
@@ -84,8 +84,9 @@ source('../ppl/relativePosition.R')
 source('../ppl/addPaths.R')
 
 dev.off()
+rand.idcs <- sample(1:length(thinned.ints),10)
 # FIXME: preforms poorly if too many points - maybe rethin?
-thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs[7]], animation = TRUE, sleep.time = 0.33)
+thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs], animation = TRUE)
 
 for (i in 1:length(thinned.ints.with.paths)) {
   plot(thinned.ints.with.paths[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
