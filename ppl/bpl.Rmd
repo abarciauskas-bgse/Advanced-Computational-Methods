@@ -33,44 +33,57 @@ Directed path enables:
 if (!require('grid')) install.packages('grid')
 if (!require('prodlim')) install.packages('prodlim')
 if (!require('igraph')) install.packages('igraph')
+if (!require('RColorBrewer')) install.packages('RColorBrewer')
+if (!require('scales')) install.packages('scales')
 
 setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/data/')
+digits <- read.csv('MNIST_training.csv')
+
 source('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/datasets/MNIST/displayDigit.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/utils.R')
+
+
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/thinPoints.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allThinnedInts.R')
-
-digits <- read.csv('MNIST_training.csv')
-# this takes ... a long time to run on my mac so may want to limit it to 1000 samples which takes <30 seconds
-thinned.ints <- all.thinned.ints(digits, limit = 5000)
+# for 1000 points this took 3 minutes? that seems wrong
+system.time(thinned.ints <- all.thinned.ints(digits[1:2000,]))
 ```
 
 Make sure things worked:
 
 ```{r}
-for (i in 11:20) {
-  plot(thinned.ints[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
-  Sys.sleep(1)
+rand.idcs <- sample(1:length(thinned.ints),10)
+for (i in rand.idcs) {
+  plot(thinned.ints[[i]]$points, main = paste0('Hey, this is a : ', thinned.ints[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  Sys.sleep(0.5)
 }
 ```
 
 Can we compare lengths?
 
 ```{r}
-(int.lengths <- lapply(thinned.ints, function(num) {
-  c(num$label, num$num.pixels)
-}))
+colors <- brewer.pal(11,'Spectral')
 
-int.lengths.mat <- matrix(unlist(int.lengths), nrow = length(int.lengths), ncol = 2, byrow = TRUE)
-plot(int.lengths.mat[,1], int.lengths.mat[,2], pch = 19)
+int.lengths <- lapply(thinned.ints, function(num) {
+  c(num$label, num$num.pixels)
+})
+
+(int.lengths.mat <- matrix(unlist(int.lengths), nrow = length(int.lengths), ncol = 2, byrow = TRUE))
+int.lengths.mat <- data.frame(na.omit(int.lengths.mat))
+colnames(int.lengths.mat) <- c('label', 'num.pixels')
+
+plot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
 ```
 
 Not really.
 
 ```{r}
-source('../ppl/addPaths.R')
 source('../ppl/relativePosition.R')
-thinned.ints.with.paths <- generatePaths(thinned.ints[11:20], animation = TRUE)
-plot(thinned.ints.with.paths[[3]]$points, pch = 19)
-points(thinned.ints.with.paths[[3]]$path, pch = 19, col = 'orange')
+source('../ppl/addPaths.R')
+
+dev.off()
+thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs[10]], animation = TRUE)
+
+plot(thinned.ints.with.paths[[1]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
+points(thinned.ints.with.paths[[1]]$path, pch = 19, col = 'red')
 ```
