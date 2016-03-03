@@ -1,18 +1,20 @@
-generatePaths <- function(thinned.ints, animation = FALSE) {
+generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
   for (idx in 1:length(thinned.ints)) {
     new.int <- thinned.ints[[idx]]
     points <- new.int$points
     label <- new.int$label
-    start <- points[nearest.origin(points),]
+    relativity = 'nearest'
+    start <- points[nearorfar.from.origin(points, relativity),]
     unvisited <<- points
     current.pt <- start
     current.directions <- neighbors.directions(current.pt, unvisited)
     current.direction <- sample(current.directions$directions,1)
     loops <- 0
+    strokes <- 1
     path <- matrix(current.pt, nrow = 1, ncol = 2, byrow = TRUE)
     if (animation) {
       plot(points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
-      Sys.sleep(0.25)
+      Sys.sleep(sleep.time)
     }
     
     # if we have reached 3 of the exteme locations, stop
@@ -24,11 +26,10 @@ generatePaths <- function(thinned.ints, animation = FALSE) {
     min.x.visited <- FALSE
     max.y.visited <- FALSE
     min.y.visited <- FALSE
-    while (!is.null(nrow(unvisited)) &&
-           !(sum(max.x.visited, min.x.visited, max.y.visited, min.y.visited) >= 3)) {
+    while (nrow(unvisited) >= 3) {
       if (animation) {
         plot.point(current.pt, color = 'orange')
-        Sys.sleep(0.25)
+        Sys.sleep(sleep.time)
       }
       (pt.in.graph <- relative.pt(path, current.pt, current.direction))
       new.pt <- NA
@@ -65,13 +66,12 @@ generatePaths <- function(thinned.ints, animation = FALSE) {
         }
       }
       if (all(is.na(new.pt))) {
-        order <- 2
         while (all(is.na(new.pt))) {
-          (new.pt <- nearest.point(current.pt, unvisited, order))
-          order <- order + 1
-          if (order > 3) {
-            break
-          }
+          if (strokes > 3) break
+          strokes <- strokes + 1
+          # toggle
+          #relativity <- ifelse(relativity == 'nearest', 'furthest', 'nearest')
+          new.pt <- unvisited[nearorfar.from.origin(unvisited, relativity),]
         }
       } 
       
@@ -94,6 +94,7 @@ generatePaths <- function(thinned.ints, animation = FALSE) {
     }
     
     thinned.ints[[idx]]['loops'] <- loops
+    thinned.ints[[idx]]['strokes'] <- strokes
     thinned.ints[[idx]]['path'] <- list(path)
   }
   return(thinned.ints)

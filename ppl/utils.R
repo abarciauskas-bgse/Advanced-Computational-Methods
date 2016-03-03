@@ -48,9 +48,15 @@ distances <- function(matrix) {
 
 rotate <- function(x) t(apply(x, 2, rev))
 
-nearest.origin <- function(points) {
-  (dists <- apply(points, 1, dist.from.origin))
-  return(which.min(dists))
+nearorfar.from.origin <- function(points, relativity = 'nearest') {
+  dists <- apply(points, 1, dist.from.origin)
+  return.pos <- NA
+  if (relativity == 'nearest') {
+    return.pos <- which.min(dists)
+  } else if (relativity == 'furthest') {
+    return.pos <- which.max(dists)
+  }
+  return(return.pos)
 }
 
 nearest.point <- function(point, points, order=1) {

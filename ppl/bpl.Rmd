@@ -46,7 +46,7 @@ source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/util
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/thinPoints.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allThinnedInts.R')
 # for 1000 points this took 3 minutes? that seems wrong
-system.time(thinned.ints <- all.thinned.ints(digits[1:2000,]))
+system.time(thinned.ints <- all.thinned.ints(digits[1:100,]))
 ```
 
 Make sure things worked:
@@ -54,7 +54,7 @@ Make sure things worked:
 ```{r}
 rand.idcs <- sample(1:length(thinned.ints),10)
 for (i in rand.idcs) {
-  plot(thinned.ints[[i]]$points, main = paste0('Hey, this is a : ', thinned.ints[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  plot(thinned.ints[[i]]$points, main = paste0('Hey, this is a: ', thinned.ints[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
   Sys.sleep(0.5)
 }
 ```
@@ -73,17 +73,56 @@ int.lengths.mat <- data.frame(na.omit(int.lengths.mat))
 colnames(int.lengths.mat) <- c('label', 'num.pixels')
 
 plot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
+
+boxplot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
 ```
 
-Not really.
+Looks like we can predict based on length a bit.
 
 ```{r}
 source('../ppl/relativePosition.R')
 source('../ppl/addPaths.R')
 
 dev.off()
-thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs[10]], animation = TRUE)
+# FIXME: preforms poorly if too many points - maybe rethin?
+thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs[7]], animation = TRUE, sleep.time = 0.33)
 
-plot(thinned.ints.with.paths[[1]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
-points(thinned.ints.with.paths[[1]]$path, pch = 19, col = 'red')
+for (i in 1:length(thinned.ints.with.paths)) {
+  plot(thinned.ints.with.paths[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  points(thinned.ints.with.paths[[i]]$path, pch = 19, col = 'red')
+  Sys.sleep(1)
+}
+```
+
+Generating new digits
+
+```{r}
+
+int.loops <- lapply(all.thinned.ints, function(num) {
+  c(num$label, num$loops)
+})
+
+int.loops.mat <- matrix(unlist(int.loops), nrow = length(int.loops), ncol = 2, byrow = TRUE)
+plot(int.loops.mat[,1], int.loops.mat[,2], pch = 19)
+
+for (idx in 1:length(all.thinned.ints)) {
+  d <- all.thinned.ints[[idx]][['path']]
+  # in a 16x16 image, a point is positioned at the absolute value of y - 1 + x
+  d.points <- apply(d, 1, function(pt) { (16*abs(pt[2])-1)+pt[1] })
+  mat <- matrix(0, nrow = 16, ncol = 16)
+  for (i in 1:256) {
+    if (i %in% d.points) {
+      row.idx <- i %/% 16 + 1
+      col.idx <- i %% 16
+      mat[row.idx,col.idx] <- 1
+    }
+  }
+  d <- graph.adjacency(mat)
+  g <- minimum.spanning.tree(d)
+
+  features <- as.numeric(t(mat))
+  # displaying the original digit
+  displayDigit(features, all.thinned.ints[[idx]]$label, newDevice = FALSE)
+  Sys.sleep(1)
+}
 ```

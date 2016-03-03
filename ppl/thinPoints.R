@@ -20,14 +20,14 @@ thin.points <- function(current.point, white.pixels, animation = FALSE) {
       # KEEP IF 
       #  - If 1 and 3 of nwse are both missing OR
       #  - If 2 and 4 of nwse are both missing
-      left <- row.match(current.point-c(1,0), white.pixels.thinned)
-      right <- row.match(current.point+c(1,0), white.pixels.thinned)
-      bottom <- row.match(current.point-c(0,1), white.pixels.thinned)
-      top <- row.match(current.point+c(0,1), white.pixels.thinned)
-      top.left <- row.match(current.point-c(1,-1), white.pixels.thinned)
-      top.right <- row.match(current.point+c(1,1), white.pixels.thinned)
-      bottom.left <- row.match(current.point-c(1,1), white.pixels.thinned)
-      bottom.right <- row.match(current.point+c(1,-1), white.pixels.thinned)
+      left <- row.match(current.point-c(1,0), white.pixels)
+      right <- row.match(current.point+c(1,0), white.pixels)
+      bottom <- row.match(current.point-c(0,1), white.pixels)
+      top <- row.match(current.point+c(0,1), white.pixels)
+      top.left <- row.match(current.point-c(1,-1), white.pixels)
+      top.right <- row.match(current.point+c(1,1), white.pixels)
+      bottom.left <- row.match(current.point-c(1,1), white.pixels)
+      bottom.right <- row.match(current.point+c(1,-1), white.pixels)
       
       # being on the edge means the current point has a min or max y or x value
       min.x <- min(white.pixels[,1])
