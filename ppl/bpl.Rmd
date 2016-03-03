@@ -46,7 +46,7 @@ source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/util
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/thinPoints.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allThinnedInts.R')
 # for 1000 points this took 3 minutes? that seems wrong
-system.time(thinned.ints <- all.thinned.ints(digits[1:100,]))
+system.time(thinned.ints <- all.thinned.ints(digits[1:1000,]))
 ```
 
 Make sure things worked:
