@@ -8,7 +8,7 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
     unvisited <<- points
     current.pt <- start
     current.directions <- neighbors.directions(current.pt, unvisited)
-    current.direction <- sample(current.directions$directions,1)
+    current.direction <- min(current.directions$directions)
     loops <- 0
     strokes <- 1
     path <- matrix(current.pt, nrow = 1, ncol = 2, byrow = TRUE)
@@ -26,7 +26,7 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
     min.x.visited <- FALSE
     max.y.visited <- FALSE
     min.y.visited <- FALSE
-    while (!is.null(nrow(unvisited) > 2)) {
+    while (!is.null(nrow(unvisited))) {
       if (animation) {
         plot.point(current.pt, color = 'orange')
         Sys.sleep(sleep.time)
@@ -37,12 +37,12 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
       if (all(is.na(pt.in.graph))) {
         new.pt <- relative.pt(unvisited, current.pt, current.direction)
       } else {
-        if (loops > 2) break
+        if (loops > 3) break
         loops <- loops + 1
         # check if we should be doing this at all
         new.pt <- nearest.point(current.pt, unvisited)
         current.directions <- neighbors.directions(new.pt, unvisited)
-        current.direction <- sample(current.directions$directions, 1)
+        current.direction <- min(current.directions$directions)
       }
       
       # if still nothing, find new direction
@@ -57,8 +57,10 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
             if (r[1] == min.x) min.x.visited <- TRUE
             if (r[2] == max.y) max.y.visited <- TRUE
             if (r[2] == min.y) min.y.visited <- TRUE
-            r <- row.match(r, unvisited)
-            if (!is.na(r)) unvisited <<- unvisited[-r,]
+            if (!is.null(nrow(unvisited))) {
+              r <- row.match(r, unvisited)
+              if (!is.na(r)) unvisited <<- unvisited[-r,]
+            }
           })
         } else {
           r <- row.match(current.directions$neighbors, unvisited)
@@ -66,19 +68,17 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
         }
       }
       if (all(is.na(new.pt))) {
-        while (all(is.na(new.pt))) {
-          if (strokes > 3) break
-          strokes <- strokes + 1
-          # toggle
-          #relativity <- ifelse(relativity == 'nearest', 'furthest', 'nearest')
-          # FIXME: we do this in 2-3 places to start / restart
-          new.pt <- unvisited[nearorfar.from.origin(unvisited, relativity),]
-          current.directions <- neighbors.directions(new.pt, unvisited)
-          current.direction <- sample(current.directions$directions, 1)
-        }
+        #if (strokes > 4) break
+        strokes <- strokes + 1
+        # toggle
+        #relativity <- ifelse(relativity == 'nearest', 'furthest', 'nearest')
+        # FIXME: we do this in 2-3 places to start / restart
+        new.pt <- unvisited[nearorfar.from.origin(unvisited, relativity),]
+        current.directions <- neighbors.directions(new.pt, unvisited)
+        current.direction <- min(current.directions$directions)
       } 
       
-      if (!all(is.na(unvisited))) {
+      if (!is.null(nrow(unvisited))) {
         r <- row.match(current.pt, unvisited)
         if (!is.na(r)) unvisited <<- unvisited[-r,]
       }

@@ -25,6 +25,8 @@ if (!require('binhf')) install.packages('binhf')
 # Return the point at relative position [1,8] to the current point
 relative.pt <- function(pixels, current.point, position) {
   pt.idx <- NA
+  if (is.null(nrow(pixels))) return(pixels)
+
   if (position == 1) {
     pt.idx <- row.match(current.point-c(1,-1), pixels)
   } else if (position == 2) {

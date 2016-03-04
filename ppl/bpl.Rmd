@@ -79,14 +79,16 @@ boxplot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alph
 
 Looks like we can predict based on length a bit.
 
+Generating strokes
+
 ```{r}
 source('../ppl/relativePosition.R')
 source('../ppl/addPaths.R')
 
 dev.off()
-rand.idcs <- sample(1:length(thinned.ints),10)
+rand.idcs <- sample(1:length(thinned.ints),1000)
 # FIXME: preforms poorly if too many points - maybe rethin?
-thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs], animation = TRUE)
+thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs])
 
 for (i in 1:length(thinned.ints.with.paths)) {
   plot(thinned.ints.with.paths[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
@@ -95,35 +97,105 @@ for (i in 1:length(thinned.ints.with.paths)) {
 }
 ```
 
-Generating new digits
+Features of stroke paths
 
 ```{r}
 
-int.loops <- lapply(all.thinned.ints, function(num) {
+int.loops <- lapply(thinned.ints.with.paths, function(num) {
   c(num$label, num$loops)
 })
 
 int.loops.mat <- matrix(unlist(int.loops), nrow = length(int.loops), ncol = 2, byrow = TRUE)
-plot(int.loops.mat[,1], int.loops.mat[,2], pch = 19)
+colnames(int.loops.mat) <- c('label','loops')
+int.loops.d <- data.frame(int.loops.mat)
 
-for (idx in 1:length(all.thinned.ints)) {
-  d <- all.thinned.ints[[idx]][['path']]
+plot(int.loops.d$loops ~ int.loops.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
+
+boxplot(int.loops.d$loops ~ int.loops.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
+```
+
+```{r}
+int.strokes <- lapply(thinned.ints.with.paths, function(num) {
+  c(num$label, num$strokes)
+})
+
+int.strokes.mat <- matrix(unlist(int.strokes), nrow = length(int.strokes), ncol = 2, byrow = TRUE)
+colnames(int.strokes.mat) <- c('label','strokes')
+int.strokes.d <- data.frame(int.strokes.mat)
+
+plot(int.strokes.d$strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
+
+boxplot(int.strokes.d$strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
+```
+
+Can we predict based on stroke and loop data?
+```{r}
+pts <- thinned.ints.with.paths
+mat <- matrix(NA, nrow = length(pts), ncol = 4)
+colnames(mat) <- c('label','num.pixels','strokes','loops')
+
+for (i in 1:nrow(mat)) {
+  values <- sapply(colnames(mat), function(n) {as.numeric(pts[[i]][n])})
+  mat[i,] <- values
+}
+
+library(nnet)
+df <- as.data.frame(mat)
+df$label <- factor(df$label)
+mod <- multinom(formula = label ~ ., df)
+head(mod$fitted.values)
+preds <- apply(mod$fitted.values, 1, which.max)
+#bad
+
+library(class)
+nrow(df)
+feats <- c('loops','strokes','num.pixels')
+train <- df[1:900,feats]
+test <- df[901:1000,feats]
+real <- df[901:1000,'label']
+cl <- df[1:900,'label']
+k.mod <- knn(train = train, test = test, cl = cl)
+head(k.mod)
+head(real)
+```
+
+Generating new digits
+
+```{r}
+for (idx in 1:length(pts)) {
+  d <- pts[[idx]][['path']]
   # in a 16x16 image, a point is positioned at the absolute value of y - 1 + x
   d.points <- apply(d, 1, function(pt) { (16*abs(pt[2])-1)+pt[1] })
+  d.points.dir <- rep(d.points,each=2)[2:(2*length(d.points)-1)]
+  g.dir <- make_directed_graph(d.points.dir)
+  paths <- all_simple_paths(g.dir, 36)
+  
   mat <- matrix(0, nrow = 16, ncol = 16)
   for (i in 1:256) {
     if (i %in% d.points) {
       row.idx <- i %/% 16 + 1
       col.idx <- i %% 16
       mat[row.idx,col.idx] <- 1
+      # randomly add noise to surrounding pixels
+      # randomly add pixel
     }
   }
-  d <- graph.adjacency(mat)
-  g <- minimum.spanning.tree(d)
 
   features <- as.numeric(t(mat))
   # displaying the original digit
-  displayDigit(features, all.thinned.ints[[idx]]$label, newDevice = FALSE)
+  png('dig.png',width = 32, height = 32)
+  displayDigit(features, pts[[idx]]$label, newDevice = FALSE)
+  dev.off()
+  library(png)
+  #install.packages('mmand')
+  library(mmand)
+  library(RNiftyReg)
+  image <- readPNG('dig.png')
+  display(image)
+  affine <- buildAffine(skews=0.01, source=image)
+  print(affine)
+  img_skewed <- applyTransform(affine, image)
+  display(img_skewed[,,1])
   Sys.sleep(1)
 }
 ```
