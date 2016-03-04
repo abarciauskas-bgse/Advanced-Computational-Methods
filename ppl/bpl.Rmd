@@ -72,7 +72,6 @@ while (length(train.labels) < 10) {
     i <- rand.idcs[i]
     label <- thinned.ints[[i]]$label
     if (!(label %in% train.labels)) {
-      print(paste('adding label:', label))
       train.labels <- append(train.labels, label)
       train.set <- append(train.set, list(thinned.ints[[i]]))
     }
@@ -88,23 +87,19 @@ for (i in 1:length(train.set)) {
 And a test set:
 
 ```{r}
-rand.idcs <- sample(1:length(thinned.ints),100)
+# FIXME: NEED TO SET DIFF FROM TRAINING SET
+rand.idcs <- sample(1:length(thinned.ints),90)
 # Collect a test set
 test.set <- list()
 test.labels <- c()
-while (length(test.labels) < 10) {
-  for (i in 1:length(rand.idcs)) {
-    i <- rand.idcs[i]
-    label <- thinned.ints[[i]]$label
-    if (!(label %in% test.labels)) {
-      print(paste('adding label:', label))
-      test.labels <- append(test.labels, label)
-      test.set <- append(test.set, list(thinned.ints[[i]]))
-    }
-  }
+for (i in 1:length(rand.idcs)) {
+  i <- rand.idcs[i]
+  label <- thinned.ints[[i]]$label
+  test.labels <- append(test.labels, label)
+  test.set <- append(test.set, list(thinned.ints[[i]]))
 }
 
-for (i in 1:length(test.set)) {
+for (i in 1:10) {
   plot(test.set[[i]]$points, main = paste0('Hey, this is a: ', test.set[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
   Sys.sleep(0.5)
 }
@@ -113,32 +108,32 @@ for (i in 1:length(test.set)) {
 Can we generate paths to predict 0's and 1's
 
 ```{r}
-zero.train <- training.set[[which(sapply(training.set, function(dig) { dig$label == 0 }))]]
-one.train <- training.set[[which(sapply(training.set, function(dig) { dig$label == 1 }))]]
-# create the path
-zero.train <- generatePaths(list(zero.train), animation = TRUE)
-one.train <- generatePaths(list(one.train))
-
-# FIXME TO BIG LARGEST STROKE
-
-# create step distributions
-# there should also be something to do with the number of steps, 41 for this zero
-(zero.total.steps <- length(zero.train[[1]]$direction.steps[[1]]))
-(zero.train.step.probabilities <- rep(0, 8))
-for (step.type in 1:8) {
-  # find number of times step happened in the first stroke
-  zero.train.step.probabilities[step.type] <- sum(zero.train[[1]]$direction.steps[[1]] == step.type)/zero.total.steps
+source('../ppl/trainPath.R')
+train.objects <- list()
+for (i in 0:9) {
+  digit <- train.set[[which(sapply(train.set, function(dig) { dig$label == i }))]]
+  train.objects[[i+1]] <- train.digit(digit)
 }
-fractions(zero.train.step.probabilities)
 
-one.steps <- one.train[[1]]$direction.steps[[which.max(sapply(one.train[[1]]$direction.steps, length))]]
-(one.total.steps <- length(one.steps))
-(one.train.step.probabilities <- rep(0, 8))
-for (step.type in 1:8) {
-  # find number of times step happened in the first stroke
-  one.train.step.probabilities[step.type] <- sum(one.train[[1]]$direction.steps[[1]] == step.type)/one.total.steps
+# test an object
+errors <- 0
+for (i in 1:length(test.set)) {
+  test.digit <- sample(test.set,1)[[1]]
+  estimate <- train.digit(test.digit)
+  estimate$step.probs
+  res <- lapply(train.objects, function(train.obj) {
+    step.prob <- estimate$step.probs%*%train.obj$step.probs
+    # weight by the difference in length, this should be scaled somehow
+    length.prob <- 1/abs((train.obj$total.steps - estimate$total.steps))
+    # weight by the difference in strokes, this may be too much of a weight
+    strokes.prob <- 1/6*abs((train.obj$num.real.strokes - estimate$num.real.strokes))
+    return(step.prob*length.prob*strokes.prob)
+  })
+  pred <- which.max(res)-1
+  actual <- test.digit$label
+  if (pred != actual) errors <- errors + 1
 }
-fractions(one.train.step.probabilities)
+(accuracy <- errors/length(test.set))
 ```
 
 Test this on test data
@@ -233,17 +228,21 @@ boxplot(int.loops.d$loops ~ int.loops.d$label, pch = 19, col = alpha(colors[[9]]
 ```
 
 ```{r}
+# long command to print out a bunch of stroke lengths, to determine what a good cutoff is, so decided by heuristics, like most of this file and functions it uses :)
+# sapply(thinned.ints.with.paths, function(p) { print(sapply(p$direction.steps, length))})
 int.strokes <- lapply(thinned.ints.with.paths, function(num) {
-  c(num$label, num$strokes)
+  num.real.strokes <- sum(sapply(num$direction.steps, length) >= 8)
+  c(num$label, num.real.strokes)
 })
 
 int.strokes.mat <- matrix(unlist(int.strokes), nrow = length(int.strokes), ncol = 2, byrow = TRUE)
-colnames(int.strokes.mat) <- c('label','strokes')
+
+colnames(int.strokes.mat) <- c('label','num.real.strokes')
 int.strokes.d <- data.frame(int.strokes.mat)
 
-plot(int.strokes.d$strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
+plot(int.strokes.d$num.real.strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
 
-boxplot(int.strokes.d$strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
+boxplot(int.strokes.d$num.real.strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
 ```
 
 Can we predict based on stroke and loop data?
