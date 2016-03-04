@@ -11,6 +11,8 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
     current.direction <- min(current.directions$directions)
     loops <- 0
     strokes <- 1
+    thinned.ints[[idx]][['direction.steps']] <- list()
+    thinned.ints[[idx]][['direction.steps']][[strokes]] <- c(current.direction)
     path <- matrix(current.pt, nrow = 1, ncol = 2, byrow = TRUE)
     if (animation) {
       plot(points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
@@ -35,7 +37,12 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
       new.pt <- NA
 
       if (all(is.na(pt.in.graph))) {
+        # step in the same direction
         new.pt <- relative.pt(unvisited, current.pt, current.direction)
+        if (!all(is.na(new.pt))) {
+          thinned.ints[[idx]][['direction.steps']][[strokes]] <- append(
+            thinned.ints[[idx]][['direction.steps']][[strokes]], current.direction)
+        }
       } else {
         if (loops > 3) break
         loops <- loops + 1
@@ -50,6 +57,11 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
         current.directions <- neighbors.directions(current.pt, unvisited)
         current.direction <- current.directions$directions[which.min(abs(current.directions$directions - current.direction))]
         new.pt <- relative.pt(unvisited, current.pt, current.direction)
+        if (!all(is.na(new.pt))) {
+          # started new direction, but still in current stroke
+          thinned.ints[[idx]][['direction.steps']][[strokes]] <- append(
+            thinned.ints[[idx]][['direction.steps']][[strokes]], current.direction)
+        }
       } else {
         if (!is.null(nrow(current.directions$neighbors))) {
           apply(current.directions$neighbors, 1, function(r) {
@@ -76,6 +88,10 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
         new.pt <- unvisited[nearorfar.from.origin(unvisited, relativity),]
         current.directions <- neighbors.directions(new.pt, unvisited)
         current.direction <- min(current.directions$directions)
+        if (!all(is.na(new.pt))) {
+          # new stroke, new direction
+          thinned.ints[[idx]][['direction.steps']][[strokes]] <- c(current.direction)
+        }
       } 
       
       if (!is.null(nrow(unvisited))) {

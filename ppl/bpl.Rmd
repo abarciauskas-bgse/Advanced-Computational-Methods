@@ -35,6 +35,7 @@ if (!require('prodlim')) install.packages('prodlim')
 if (!require('igraph')) install.packages('igraph')
 if (!require('RColorBrewer')) install.packages('RColorBrewer')
 if (!require('scales')) install.packages('scales')
+if (!require('MASS')) install.packages('MASS')
 
 setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/data/')
 digits <- read.csv('MNIST_training.csv')
@@ -46,18 +47,135 @@ source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/util
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/thinPoints.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allThinnedInts.R')
 # for 1000 points this took 3 minutes? that seems wrong
-system.time(thinned.ints <- all.thinned.ints(digits[1:1000,]))
+rand.idcs <- sample(1:nrow(digits),100)
+system.time(thinned.ints <- all.thinned.ints(digits[rand.idcs,]))
 ```
 
 Make sure things worked:
 
 ```{r}
-rand.idcs <- sample(1:length(thinned.ints),10)
-for (i in rand.idcs) {
+for (i in 1:length(rand.idcs)) {
   plot(thinned.ints[[i]]$points, main = paste0('Hey, this is a: ', thinned.ints[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
   Sys.sleep(0.5)
 }
 ```
+
+
+```{r}
+# Collect a training set
+rand.idcs <- sample(1:length(thinned.ints),100)
+# Collect a train set
+train.set <- list()
+train.labels <- c()
+while (length(train.labels) < 10) {
+  for (i in 1:length(rand.idcs)) {
+    i <- rand.idcs[i]
+    label <- thinned.ints[[i]]$label
+    if (!(label %in% train.labels)) {
+      print(paste('adding label:', label))
+      train.labels <- append(train.labels, label)
+      train.set <- append(train.set, list(thinned.ints[[i]]))
+    }
+  }
+}
+
+for (i in 1:length(train.set)) {
+  plot(train.set[[i]]$points, main = paste0('Hey, this is a: ', train.set[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  Sys.sleep(0.5)
+}
+```
+
+And a test set:
+
+```{r}
+rand.idcs <- sample(1:length(thinned.ints),100)
+# Collect a test set
+test.set <- list()
+test.labels <- c()
+while (length(test.labels) < 10) {
+  for (i in 1:length(rand.idcs)) {
+    i <- rand.idcs[i]
+    label <- thinned.ints[[i]]$label
+    if (!(label %in% test.labels)) {
+      print(paste('adding label:', label))
+      test.labels <- append(test.labels, label)
+      test.set <- append(test.set, list(thinned.ints[[i]]))
+    }
+  }
+}
+
+for (i in 1:length(test.set)) {
+  plot(test.set[[i]]$points, main = paste0('Hey, this is a: ', test.set[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
+  Sys.sleep(0.5)
+}
+```
+
+Can we generate paths to predict 0's and 1's
+
+```{r}
+zero.train <- training.set[[which(sapply(training.set, function(dig) { dig$label == 0 }))]]
+one.train <- training.set[[which(sapply(training.set, function(dig) { dig$label == 1 }))]]
+# create the path
+zero.train <- generatePaths(list(zero.train), animation = TRUE)
+one.train <- generatePaths(list(one.train))
+
+# FIXME TO BIG LARGEST STROKE
+
+# create step distributions
+# there should also be something to do with the number of steps, 41 for this zero
+(zero.total.steps <- length(zero.train[[1]]$direction.steps[[1]]))
+(zero.train.step.probabilities <- rep(0, 8))
+for (step.type in 1:8) {
+  # find number of times step happened in the first stroke
+  zero.train.step.probabilities[step.type] <- sum(zero.train[[1]]$direction.steps[[1]] == step.type)/zero.total.steps
+}
+fractions(zero.train.step.probabilities)
+
+one.steps <- one.train[[1]]$direction.steps[[which.max(sapply(one.train[[1]]$direction.steps, length))]]
+(one.total.steps <- length(one.steps))
+(one.train.step.probabilities <- rep(0, 8))
+for (step.type in 1:8) {
+  # find number of times step happened in the first stroke
+  one.train.step.probabilities[step.type] <- sum(one.train[[1]]$direction.steps[[1]] == step.type)/one.total.steps
+}
+fractions(one.train.step.probabilities)
+```
+
+Test this on test data
+
+```{r}
+zero.test <- test.set[[which(sapply(test.set, function(dig) { dig$label == 0 }))]]
+one.test <- test.set[[which(sapply(test.set, function(dig) { dig$label == 1 }))]]
+# create the path
+zero.test <- generatePaths(list(zero.test))
+one.test <- generatePaths(list(one.test))
+
+# create step distributions
+(zero.total.steps <- length(zero.test[[1]]$direction.steps[[1]]))
+(zero.test.step.probabilities <- rep(0, 8))
+for (step.type in 1:8) {
+  # find number of times step happened in the first stroke
+  zero.test.step.probabilities[step.type] <- sum(zero.test[[1]]$direction.steps[[1]] == step.type)/zero.total.steps
+}
+fractions(zero.test.step.probabilities)
+
+one.steps <- one.test[[1]]$direction.steps[[which.max(sapply(one.test[[1]]$direction.steps, length))]]
+(one.total.steps <- length(one.steps))
+(one.test.step.probabilities <- rep(0, 8))
+for (step.type in 1:8) {
+  # find number of times step happened in the first stroke
+  one.test.step.probabilities[step.type] <- sum(one.test[[1]]$direction.steps[[1]] == step.type)/one.total.steps
+}
+fractions(one.test.step.probabilities)
+
+one.test.step.probabilities%*%zero.train.step.probabilities
+one.test.step.probabilities%*%one.train.step.probabilities
+
+zero.test.step.probabilities%*%one.train.step.probabilities
+zero.test.step.probabilities%*%zero.train.step.probabilities
+```
+
+
 
 Can we compare lengths?
 
@@ -86,9 +204,9 @@ source('../ppl/relativePosition.R')
 source('../ppl/addPaths.R')
 
 dev.off()
-rand.idcs <- sample(1:length(thinned.ints),1000)
+#rand.idcs <- sample(1:length(thinned.ints),1000)
 # FIXME: preforms poorly if too many points - maybe rethin?
-thinned.ints.with.paths <- generatePaths(thinned.ints[rand.idcs])
+thinned.ints.with.paths <- generatePaths(thinned.ints[1:100])
 
 for (i in 1:length(thinned.ints.with.paths)) {
   plot(thinned.ints.with.paths[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
