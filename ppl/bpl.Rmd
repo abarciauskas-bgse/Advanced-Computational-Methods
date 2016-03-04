@@ -136,42 +136,6 @@ for (i in 1:length(test.set)) {
 (accuracy <- errors/length(test.set))
 ```
 
-Test this on test data
-
-```{r}
-zero.test <- test.set[[which(sapply(test.set, function(dig) { dig$label == 0 }))]]
-one.test <- test.set[[which(sapply(test.set, function(dig) { dig$label == 1 }))]]
-# create the path
-zero.test <- generatePaths(list(zero.test))
-one.test <- generatePaths(list(one.test))
-
-# create step distributions
-(zero.total.steps <- length(zero.test[[1]]$direction.steps[[1]]))
-(zero.test.step.probabilities <- rep(0, 8))
-for (step.type in 1:8) {
-  # find number of times step happened in the first stroke
-  zero.test.step.probabilities[step.type] <- sum(zero.test[[1]]$direction.steps[[1]] == step.type)/zero.total.steps
-}
-fractions(zero.test.step.probabilities)
-
-one.steps <- one.test[[1]]$direction.steps[[which.max(sapply(one.test[[1]]$direction.steps, length))]]
-(one.total.steps <- length(one.steps))
-(one.test.step.probabilities <- rep(0, 8))
-for (step.type in 1:8) {
-  # find number of times step happened in the first stroke
-  one.test.step.probabilities[step.type] <- sum(one.test[[1]]$direction.steps[[1]] == step.type)/one.total.steps
-}
-fractions(one.test.step.probabilities)
-
-one.test.step.probabilities%*%zero.train.step.probabilities
-one.test.step.probabilities%*%one.train.step.probabilities
-
-zero.test.step.probabilities%*%one.train.step.probabilities
-zero.test.step.probabilities%*%zero.train.step.probabilities
-```
-
-
-
 Can we compare lengths?
 
 ```{r}
@@ -188,92 +152,6 @@ colnames(int.lengths.mat) <- c('label', 'num.pixels')
 plot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
 
 boxplot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.5))
-```
-
-Looks like we can predict based on length a bit.
-
-Generating strokes
-
-```{r}
-source('../ppl/relativePosition.R')
-source('../ppl/addPaths.R')
-
-dev.off()
-#rand.idcs <- sample(1:length(thinned.ints),1000)
-# FIXME: preforms poorly if too many points - maybe rethin?
-thinned.ints.with.paths <- generatePaths(thinned.ints[1:100])
-
-for (i in 1:length(thinned.ints.with.paths)) {
-  plot(thinned.ints.with.paths[[i]]$points, pch = 19, ylim = c(-16,0), xlim = c(0,16))
-  points(thinned.ints.with.paths[[i]]$path, pch = 19, col = 'red')
-  Sys.sleep(1)
-}
-```
-
-Features of stroke paths
-
-```{r}
-
-int.loops <- lapply(thinned.ints.with.paths, function(num) {
-  c(num$label, num$loops)
-})
-
-int.loops.mat <- matrix(unlist(int.loops), nrow = length(int.loops), ncol = 2, byrow = TRUE)
-colnames(int.loops.mat) <- c('label','loops')
-int.loops.d <- data.frame(int.loops.mat)
-
-plot(int.loops.d$loops ~ int.loops.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
-
-boxplot(int.loops.d$loops ~ int.loops.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
-```
-
-```{r}
-# long command to print out a bunch of stroke lengths, to determine what a good cutoff is, so decided by heuristics, like most of this file and functions it uses :)
-# sapply(thinned.ints.with.paths, function(p) { print(sapply(p$direction.steps, length))})
-int.strokes <- lapply(thinned.ints.with.paths, function(num) {
-  num.real.strokes <- sum(sapply(num$direction.steps, length) >= 8)
-  c(num$label, num.real.strokes)
-})
-
-int.strokes.mat <- matrix(unlist(int.strokes), nrow = length(int.strokes), ncol = 2, byrow = TRUE)
-
-colnames(int.strokes.mat) <- c('label','num.real.strokes')
-int.strokes.d <- data.frame(int.strokes.mat)
-
-plot(int.strokes.d$num.real.strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
-
-boxplot(int.strokes.d$num.real.strokes ~ int.strokes.d$label, pch = 19, col = alpha(colors[[9]], 0.1))
-```
-
-Can we predict based on stroke and loop data?
-```{r}
-pts <- thinned.ints.with.paths
-mat <- matrix(NA, nrow = length(pts), ncol = 4)
-colnames(mat) <- c('label','num.pixels','strokes','loops')
-
-for (i in 1:nrow(mat)) {
-  values <- sapply(colnames(mat), function(n) {as.numeric(pts[[i]][n])})
-  mat[i,] <- values
-}
-
-library(nnet)
-df <- as.data.frame(mat)
-df$label <- factor(df$label)
-mod <- multinom(formula = label ~ ., df)
-head(mod$fitted.values)
-preds <- apply(mod$fitted.values, 1, which.max)
-#bad
-
-library(class)
-nrow(df)
-feats <- c('loops','strokes','num.pixels')
-train <- df[1:900,feats]
-test <- df[901:1000,feats]
-real <- df[901:1000,'label']
-cl <- df[1:900,'label']
-k.mod <- knn(train = train, test = test, cl = cl)
-head(k.mod)
-head(real)
 ```
 
 Generating new digits
