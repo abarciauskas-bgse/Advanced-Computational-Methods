@@ -7,8 +7,7 @@ source('adaBoost.R')
 #
 boosting.tests <- function(data,
                            test.fraction = 1/10,
-                           boosting.iterations = c(1,seq(5,100,5)),
-                           depths = c(1,seq(5,100,5))) {
+                           boosting.iterations = c(1,seq(5,30,5))) {
   # Setup training and test data
   n.total.rows <- nrow(data)
   
@@ -23,9 +22,9 @@ boosting.tests <- function(data,
   data.test <- data[test.idcs,]
   
   # initialize matrices to store training and test errors
-  num.tests <- length(depths)
-  test.results.matrix <- matrix(c(depths, rep(0, num.tests)), nrow = num.tests, ncol = 2)
-  colnames(test.results.matrix) <- c('depths', 'error')
+  num.tests <- length(boosting.iterations)
+  test.results.matrix <- matrix(c(boosting.iterations, rep(0, num.tests)), nrow = num.tests, ncol = 2)
+  colnames(test.results.matrix) <- c('boosting.iterations', 'error')
   my.ada.train.errors <- test.results.matrix
   my.ada.test.errors <- test.results.matrix
   gbm.train.errors <- test.results.matrix
@@ -34,8 +33,9 @@ boosting.tests <- function(data,
   for (i in 1:num.tests) {
     # train using my adaboost function with noTrees = iter
     boost.iters <- boosting.iterations[i]
-    depth <- depths[i]
-    my.ada.trained <- adaBoost(formula = (X1 ~ .), data = data.train, depth = depth, noTrees = boost.iters)
+    # FIXME - add depths
+    source('makePredictions.R')
+    my.ada.trained <- adaBoost(formula = (X1 ~ .), data = data.train, depth = 1, noTrees = boost.iters)
     my.ada.train.errors[i,2] <- my.ada.trained$train.error
     
     # make predictions using the trained model

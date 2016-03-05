@@ -8,5 +8,3 @@ spam <- read.csv('spambase.data')
 spam$X1 <- as.factor(spam$X1)
 
 res <- boosting.tests(spam)
-
-
