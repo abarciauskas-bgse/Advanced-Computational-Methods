@@ -21,15 +21,12 @@ train.digit <- function(digit) {
   # Add progression of steps
   # Find the first step type that occupies > 10% of the direction
   first.major.step <- NA
-  second.major.step <- NA
   major.step.threshold <- round(0.1*digit.total.steps)
   for (i in 1:length(digit.steps)) {
     if (i + major.step.threshold < length(digit.steps)) {
       if (length(unique(digit.steps[i:(i+major.step.threshold)])) == 1) {
         if (is.na(first.major.step)) {
           first.major.step <- digit.steps[i]
-        } else if (is.na(second.major.step) && (first.major.step != digit.steps[i])) {
-          second.major.step <- digit.steps[i]
           break
         }
       }
@@ -43,7 +40,6 @@ train.digit <- function(digit) {
     total.steps = digit.total.steps,
     num.real.strokes = digit.num.real.strokes,
     changes.in.direction = digit.train[[1]]$changes.in.direction,
-    first.major.step = first.major.step,
-    second.major.step = second.major.step))
+    first.major.step = first.major.step))
 }
 

@@ -43,6 +43,8 @@ source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allT
 
 # Select a random subset of digits
 rand.idcs <- sample(1:nrow(digits),100)
+# special.set<-c(1765,2183,3251,1843,5043,2380,2520,5291,486,5079)
+# rand.idcs <- c(special.set, rand.idcs)
 
 for (i in 1:10) {
   digit <- digits[rand.idcs[i],]
@@ -74,6 +76,7 @@ With the thinned images, we generate a training set of the distinct set of 10 di
 train.set <- list()
 train.labels <- c()
 train.idcs <- c()
+# 
 while (length(train.labels) < 10) {
   for (i in 1:length(rand.idcs)) {
     label <- thinned.ints[[i]]$label
@@ -126,7 +129,8 @@ for (i in 0:9) {
   digit <- train.set[[which(sapply(train.set, function(dig) { dig$label == i }))]]
   train.objects[[i+1]] <- train.digit(digit)
 }
-# what is the range of total steps
+
+# ASSUMPTION: Normally distributed steps, strokes and changes in direction
 total.steps.sd <- sd(sapply(train.objects, function(obj) { obj$total.steps }))
 num.real.strokes.sd <- sd(sapply(train.objects, function(obj) { obj$num.real.strokes }))
 # we use this below, if within distribution, increase likelihood
@@ -136,18 +140,12 @@ changes.sd <- sd(sapply(train.objects, function(obj) { obj$changes.in.direction 
 # 
 first.steps <- rep(0, 8)
 for (i in 1:8) {
-  first.steps[i] <- sum(sapply(train.objects, function(obj) { obj$first.major.step == i }))
-}
-first.steps.dist <- first.steps/10
-
-second.steps <- rep(0, 8)
-for (i in 1:8) {
-  second.steps[i] <- sum(sapply(train.objects, function(obj) {
-    ss <- obj$second.major.step
-    ifelse(is.na(ss), FALSE, ss == i)
+  first.steps[i] <- sum(sapply(train.objects, function(obj) {
+    fs <- obj$first.major.step
+    ifelse(is.na(fs), FALSE, fs == i)
   }))
 }
-second.steps.dist <- second.steps/10
+first.steps.dist <- first.steps/10
 
 # test objects
 errors <- 0
@@ -159,37 +157,21 @@ for (i in 1:length(test.set)) {
   res <- lapply(train.objects, function(train.obj) {
     step.prob <- estimate$step.probs%*%train.obj$step.probs
     # probability given distribution of total steps for training object
-    length.prob <- dnorm((train.obj$total.steps - estimate$total.steps), mean = 0, sd = total.steps.sd)
-    strokes.prob <- dnorm((train.obj$num.real.strokes - estimate$num.real.strokes), mean = 0, sd = num.real.strokes.sd)
-    # weight by changes in direction
-    changes.prob <- dnorm((train.obj$changes.in.direction - estimate$changes.in.direction), mean = 0, sd = changes.sd)
+    length.prob <- dnorm(abs(train.obj$total.steps - estimate$total.steps), mean = 0, sd = total.steps.sd)
+    strokes.prob <- dnorm(abs(train.obj$num.real.strokes - estimate$num.real.strokes), mean = 0, sd = num.real.strokes.sd)
+    changes.prob <- dnorm(abs(train.obj$changes.in.direction - estimate$changes.in.direction), mean = 0, sd = changes.sd)
     # if the first major step is the same, we want the probability of that major step given all the data 
     first.major.step.prob <- if ((!is.na(estimate$first.major.step)) &&
                                  (!is.na(train.obj$first.major.step)) &&
                                  (train.obj$first.major.step == estimate$first.major.step)) {
       first.steps.dist[estimate$first.major.step]
     } else {
-      # THIS COULD BE 0
-      max(0.1*first.steps.dist[estimate$first.major.step], 0.1)
+      ifelse(is.na(estimate$first.major.step), 0.1, max(0.1*first.steps.dist[estimate$first.major.step], 0.1))
     }
-
-    # FIXME: if both NA this should be a greater probability
-    second.major.step.prob <- if ((!is.na(estimate$second.major.step)) &&
-                                  (!is.na(train.obj$second.major.step)) &&
-                                  (train.obj$second.major.step == estimate$second.major.step)) {
-      first.steps.dist[estimate$first.major.step]
-    } else {
-      # THIS COULD BE 0
-      max(0.1*first.steps.dist[estimate$first.major.step], 0.1)
-    }
-    return(strokes.prob*first.major.step.prob*second.major.step.prob*length.prob*changes.prob)
+    return(strokes.prob*first.major.step.prob*length.prob*changes.prob)
   })
-  (pred <- which.max(res)-1)
-  if (length(pred) > 1) print('more than one prediction')
-  #print(paste('predicting a:', pred))
+  pred <- which.max(res)-1
   actual <- test.digit$label
-  #print(paste('actual is a:', actual))
-  #Sys.sleep(0.2)
   # random selection
   if (all(is.na(res))) {
     print('random selection')
@@ -197,8 +179,6 @@ for (i in 1:length(test.set)) {
   }
   if (pred != actual) errors <- errors + 1
 }
-# got 32.22% with the following training idcs
-# [1] 1765 2183 3251 1843 5043 2380 2520 5291  486 5079
 (accuracy <- 1-errors/length(test.set))
 ```
 
@@ -217,7 +197,7 @@ apriori.test.probs <- test.distribution[,2]/length(test.set)
 ntests <- 100
 random.accuracies <- rep(0, ntests)
 for (iter in 1:ntests) {
-  random.draws <- which(rmultinom(90, size = 1, prob = apriori.test.probs) == 1, arr.ind = TRUE)[,1]
+  random.draws <- which(rmultinom(length(test.set), size = 1, prob = apriori.test.probs) == 1, arr.ind = TRUE)[,1]
   #hist(random.draws)
   
   random.errors <- 0
