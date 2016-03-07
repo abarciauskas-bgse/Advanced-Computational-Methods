@@ -5,29 +5,24 @@ date: "March 2, 2016"
 output: pdf_document
 ---
 
-Bayesian Programming Learning of Hand-Drawn Integers
+# Bayesian Programming Learning on MNIST Dataset
 
-[ADD ME: SHOW EXAMPLES]
-0
-1
-2
-3
-4
-5
-6
-7
-8
-9
+The MNIST dataset of hand-drawn integers is comparable to the omniglot dataset of hand-drawn alphabetic characters in that it includes many examples with a high degree of variation. It is the variation across two-dimensions which makes the classification difficult. More explicitly, two vectors of a long series of pixels identifying the same character are very likely to be completely distinct.
 
-1. Create thinned image
-2. Generate directed path
+For the MNIST dataset, we have simulated the process of the Bayesian Program Learning for the omniglot dataset for predicting new integers using a single example from each class 0-9.
 
-Directed path enables:
+One challenge in simulating this process directly is that the BPL paper used motor data from Amazon Turk: to create the program they used stroke trajectory data, e.g. each hand-drawn image came with trajectory data which informed where the strokes for each character were started and facilitated differentiation of distinct strokes and their relations to each other.
 
-1. New integer generation
-2. Prediction?
+The MNIST dataset do not come with motor data so in what follows a "trajectory" is simulated by a directed-path-generating algorithm that relies highly on heuristics of how characters are drawn. The process here is also simplified by relying  entirely on the directed paths generated from the algorithm and has not incorporated the relations between strokes as part of assessing the posterior probability.
 
-## Creating the thinned image
+## The process is as follows:
+
+**1. Create thinned image:** The original image is whittled down to a "one-pixel" skeleton
+**2. Generate directed path:** Simulate trajectory using a heuristics-motivated path generating algorithm. [ADD ME: Describe how this works]
+
+In theory, the directed path enables both new integer generation and integer prediction on test examples. Here we focus on the latter because it is cooler.
+
+## 1. Creating the thinned image
 
 ```{r}
 if (!require('grid')) install.packages('grid')
@@ -40,14 +35,26 @@ if (!require('MASS')) install.packages('MASS')
 setwd('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/data/')
 digits <- read.csv('MNIST_training.csv')
 
+# TODO: make package and put this stuff there
 source('~/Box Sync/abarciausksas/myfiles/15D012 Advanced Computational Methods/datasets/MNIST/displayDigit.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/utils.R')
-
-
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/thinPoints.R')
 source('~/Box Sync/abarciausksas/myfiles/Advanced Computational Methods/ppl/allThinnedInts.R')
-# for 1000 points this took 3 minutes? that seems wrong
+
+# Select a random subset of digits
 rand.idcs <- sample(1:nrow(digits),100)
+
+for (i in 1:10) {
+  digit <- digits[rand.idcs[i],]
+  label <- as.numeric(digit[1])
+  features <- as.numeric(digit[2:ncol(digit)])
+  # displaying the original digit
+  displayDigit(features, label, newDevice = FALSE)
+  Sys.sleep(0.5)
+}
+
+# create the one-pixel skeleton
+# [TODO] this takes 30 seconds so come up with something to talk about here
 system.time(thinned.ints <- all.thinned.ints(digits[rand.idcs,]))
 ```
 
@@ -60,40 +67,43 @@ for (i in 1:length(rand.idcs)) {
 }
 ```
 
+With the thinned images, we generate a training set of the distinct set of 10 distinct integers.
 
 ```{r}
 # Collect a training set
-rand.idcs <- sample(1:length(thinned.ints),100)
-# Collect a train set
 train.set <- list()
 train.labels <- c()
+train.idcs <- c()
 while (length(train.labels) < 10) {
   for (i in 1:length(rand.idcs)) {
-    i <- rand.idcs[i]
     label <- thinned.ints[[i]]$label
     if (!(label %in% train.labels)) {
+      train.idcs <- append(train.idcs, i)
+      print(paste('Collected a:', label))
       train.labels <- append(train.labels, label)
       train.set <- append(train.set, list(thinned.ints[[i]]))
     }
   }
 }
 
+# Check on the training set
 for (i in 1:length(train.set)) {
   plot(train.set[[i]]$points, main = paste0('Hey, this is a: ', train.set[[i]]$label), pch = 19, ylim = c(-16,0), xlim = c(0,16))
   Sys.sleep(0.5)
 }
 ```
 
-And a test set:
+Collect a test set which is the other 90 integers from the random collection:
 
 ```{r}
-# FIXME: NEED TO SET DIFF FROM TRAINING SET
-rand.idcs <- sample(1:length(thinned.ints),90)
-# Collect a test set
+# Set difference from random indices to get test set
+test.idcs <- setdiff(1:length(rand.idcs), train.idcs)
+
+# Collect the test set
 test.set <- list()
 test.labels <- c()
-for (i in 1:length(rand.idcs)) {
-  i <- rand.idcs[i]
+for (i in 1:length(test.idcs)) {
+  i <- test.idcs[i]
   label <- thinned.ints[[i]]$label
   test.labels <- append(test.labels, label)
   test.set <- append(test.set, list(thinned.ints[[i]]))
@@ -105,92 +115,115 @@ for (i in 1:10) {
 }
 ```
 
-Can we generate paths to predict 0's and 1's
+Generate paths and test resutls
 
 ```{r}
+source('../ppl/addPaths.R')
+source('../ppl/relativePosition.R')
 source('../ppl/trainPath.R')
 train.objects <- list()
 for (i in 0:9) {
   digit <- train.set[[which(sapply(train.set, function(dig) { dig$label == i }))]]
   train.objects[[i+1]] <- train.digit(digit)
 }
+# what is the range of total steps
+steps.sd <- sd(sapply(train.objects, function(obj) { obj$total.steps }))
+# we use this below, if within distribution, increase likelihood
+changes.sd <- sd(sapply(train.objects, function(obj) { obj$changes.in.direction }))
 
-# test an object
+# create distribution of first major steps
+# 
+first.steps <- rep(0, 8)
+for (i in 1:8) {
+  first.steps[i] <- sum(sapply(train.objects, function(obj) { obj$first.major.step == i }))
+}
+first.steps.dist <- first.steps/10
+
+second.steps <- rep(0, 8)
+for (i in 1:8) {
+  second.steps[i] <- sum(sapply(train.objects, function(obj) {
+    ss <- obj$second.major.step
+    ifelse(is.na(ss), FALSE, ss == i)
+  }))
+}
+second.steps.dist <- second.steps/10
+
+# test objects
 errors <- 0
 for (i in 1:length(test.set)) {
-  test.digit <- sample(test.set,1)[[1]]
+  test.digit <- test.set[[i]]
   estimate <- train.digit(test.digit)
-  estimate$step.probs
+
+  # compare our test object with our training objects: e.g. predict the integer which has the most likely distribution of steps for the longest stroke, weighted by the difference it the length of the first stroke and weighted by the total number of strokes
   res <- lapply(train.objects, function(train.obj) {
     step.prob <- estimate$step.probs%*%train.obj$step.probs
     # weight by the difference in length, this should be scaled somehow
-    length.prob <- 1/abs((train.obj$total.steps - estimate$total.steps))
-    # weight by the difference in strokes, this may be too much of a weight
-    strokes.prob <- 1/6*abs((train.obj$num.real.strokes - estimate$num.real.strokes))
-    return(step.prob*length.prob*strokes.prob)
+    length.prob <- ifelse(abs(train.obj$total.steps - estimate$total.steps) <= step.range.threshold, 0.9, 0.1)
+    strokes.prob <- ifelse(train.obj$num.real.strokes == estimate$num.real.strokes, 0.9, 0.1)
+    # weight by changes in direction
+    changes.prob <- ifelse(abs(train.obj$changes.in.direction - estimate$changes.in.direction) <= changes.threshold, 0.9, 0.1)
+    # if the first major step is the same, we want the probability of that major step given all the data 
+    first.major.step.prob <- if ((!is.na(estimate$first.major.step)) &&
+                                 (!is.na(train.obj$first.major.step)) &&
+                                 (train.obj$first.major.step == estimate$first.major.step)) {
+      first.steps.dist[estimate$first.major.step]
+    } else {
+      # THIS COULD BE 0
+      max(0.1*first.steps.dist[estimate$first.major.step], 0.1)
+    }
+
+    # FIXME: if both NA this should be a greater probability
+    second.major.step.prob <- if ((!is.na(estimate$second.major.step)) &&
+                                  (!is.na(train.obj$second.major.step)) &&
+                                  (train.obj$second.major.step == estimate$second.major.step)) {
+      first.steps.dist[estimate$first.major.step]
+    } else {
+      # THIS COULD BE 0
+      max(0.1*first.steps.dist[estimate$first.major.step], 0.1)
+    }
+    return(strokes.prob*first.major.step.prob*second.major.step.prob*length.prob*changes.prob)
   })
-  pred <- which.max(res)-1
+  (pred <- which.max(res)-1)
+  if (length(pred) > 1) print('more than one prediction')
+  #print(paste('predicting a:', pred))
   actual <- test.digit$label
+  #print(paste('actual is a:', actual))
+  #Sys.sleep(0.2)
+  # random selection
+  if (all(is.na(res))) {
+    print('random selection')
+    pred <- round(pred <- runif(1, min = 0, max = 9))
+  }
   if (pred != actual) errors <- errors + 1
 }
-(accuracy <- errors/length(test.set))
+# got 32.22% with the following training idcs
+# [1] 1765 2183 3251 1843 5043 2380 2520 5291  486 5079
+(accuracy <- 1-errors/length(test.set))
 ```
 
-Can we compare lengths?
+
+Compare with random selection
 
 ```{r}
-colors <- brewer.pal(11,'Spectral')
-
-int.lengths <- lapply(thinned.ints, function(num) {
-  c(num$label, num$num.pixels)
-})
-
-(int.lengths.mat <- matrix(unlist(int.lengths), nrow = length(int.lengths), ncol = 2, byrow = TRUE))
-int.lengths.mat <- data.frame(na.omit(int.lengths.mat))
-colnames(int.lengths.mat) <- c('label', 'num.pixels')
-
-plot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.1))
-
-boxplot(int.lengths.mat$num.pixels ~ int.lengths.mat$label, pch = 19, col = alpha(colors[[9]], 0.5))
-```
-
-Generating new digits
-
-```{r}
-for (idx in 1:length(pts)) {
-  d <- pts[[idx]][['path']]
-  # in a 16x16 image, a point is positioned at the absolute value of y - 1 + x
-  d.points <- apply(d, 1, function(pt) { (16*abs(pt[2])-1)+pt[1] })
-  d.points.dir <- rep(d.points,each=2)[2:(2*length(d.points)-1)]
-  g.dir <- make_directed_graph(d.points.dir)
-  paths <- all_simple_paths(g.dir, 36)
-  
-  mat <- matrix(0, nrow = 16, ncol = 16)
-  for (i in 1:256) {
-    if (i %in% d.points) {
-      row.idx <- i %/% 16 + 1
-      col.idx <- i %% 16
-      mat[row.idx,col.idx] <- 1
-      # randomly add noise to surrounding pixels
-      # randomly add pixel
-    }
-  }
-
-  features <- as.numeric(t(mat))
-  # displaying the original digit
-  png('dig.png',width = 32, height = 32)
-  displayDigit(features, pts[[idx]]$label, newDevice = FALSE)
-  dev.off()
-  library(png)
-  #install.packages('mmand')
-  library(mmand)
-  library(RNiftyReg)
-  image <- readPNG('dig.png')
-  display(image)
-  affine <- buildAffine(skews=0.01, source=image)
-  print(affine)
-  img_skewed <- applyTransform(affine, image)
-  display(img_skewed[,,1])
-  Sys.sleep(1)
+(test.distribution <- matrix(append(c(0:9), rep(0,10)), nrow = 10, ncol = 2))
+for (idx in 1:length(test.set)) {
+  test.distribution[(test.set[[idx]]$label+1),2] <- test.distribution[(test.set[[idx]]$label+1),2] + 1
 }
+sum(test.distribution[,2])
+barplot(test.distribution[,2])
+apriori.test.probs <- test.distribution[,2]/length(test.set)
+# do this 100 times to get average random accuracy
+ntests <- 100
+random.accuracies <- rep(0, ntests)
+for (iter in 1:ntests) {
+  random.draws <- which(rmultinom(90, size = 1, prob = apriori.test.probs) == 1, arr.ind = TRUE)[,1]
+  #hist(random.draws)
+  
+  random.errors <- 0
+  for (i in 1:length(test.set)) {
+    if (test.set[[i]]$label != random.draws[i]) random.errors <- random.errors + 1
+  }
+  random.accuracies[iter] <- (random.accuracy <- 1 - random.errors/length(test.set))
+}
+mean(random.accuracies)
 ```

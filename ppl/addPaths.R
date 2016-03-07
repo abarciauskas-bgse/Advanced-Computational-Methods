@@ -11,6 +11,7 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
     current.direction <- min(current.directions$directions)
     loops <- 0
     strokes <- 1
+    thinned.ints[[idx]][['changes.in.direction']] <- 0
     thinned.ints[[idx]][['direction.steps']] <- list()
     thinned.ints[[idx]][['direction.steps']][[strokes]] <- c(current.direction)
     path <- matrix(current.pt, nrow = 1, ncol = 2, byrow = TRUE)
@@ -62,6 +63,7 @@ generatePaths <- function(thinned.ints, animation = FALSE, sleep.time = 0.5) {
           thinned.ints[[idx]][['direction.steps']][[strokes]] <- append(
             thinned.ints[[idx]][['direction.steps']][[strokes]], current.direction)
         }
+        thinned.ints[[idx]][['changes.in.direction']] <- thinned.ints[[idx]][['changes.in.direction']] + 1
       } else {
         if (!is.null(nrow(current.directions$neighbors))) {
           apply(current.directions$neighbors, 1, function(r) {
