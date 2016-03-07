@@ -127,7 +127,8 @@ for (i in 0:9) {
   train.objects[[i+1]] <- train.digit(digit)
 }
 # what is the range of total steps
-steps.sd <- sd(sapply(train.objects, function(obj) { obj$total.steps }))
+total.steps.sd <- sd(sapply(train.objects, function(obj) { obj$total.steps }))
+num.real.strokes.sd <- sd(sapply(train.objects, function(obj) { obj$num.real.strokes }))
 # we use this below, if within distribution, increase likelihood
 changes.sd <- sd(sapply(train.objects, function(obj) { obj$changes.in.direction }))
 
@@ -157,11 +158,11 @@ for (i in 1:length(test.set)) {
   # compare our test object with our training objects: e.g. predict the integer which has the most likely distribution of steps for the longest stroke, weighted by the difference it the length of the first stroke and weighted by the total number of strokes
   res <- lapply(train.objects, function(train.obj) {
     step.prob <- estimate$step.probs%*%train.obj$step.probs
-    # weight by the difference in length, this should be scaled somehow
-    length.prob <- ifelse(abs(train.obj$total.steps - estimate$total.steps) <= step.range.threshold, 0.9, 0.1)
-    strokes.prob <- ifelse(train.obj$num.real.strokes == estimate$num.real.strokes, 0.9, 0.1)
+    # probability given distribution of total steps for training object
+    length.prob <- dnorm((train.obj$total.steps - estimate$total.steps), mean = 0, sd = total.steps.sd)
+    strokes.prob <- dnorm((train.obj$num.real.strokes - estimate$num.real.strokes), mean = 0, sd = num.real.strokes.sd)
     # weight by changes in direction
-    changes.prob <- ifelse(abs(train.obj$changes.in.direction - estimate$changes.in.direction) <= changes.threshold, 0.9, 0.1)
+    changes.prob <- dnorm((train.obj$changes.in.direction - estimate$changes.in.direction), mean = 0, sd = changes.sd)
     # if the first major step is the same, we want the probability of that major step given all the data 
     first.major.step.prob <- if ((!is.na(estimate$first.major.step)) &&
                                  (!is.na(train.obj$first.major.step)) &&
