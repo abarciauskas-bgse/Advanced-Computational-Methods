@@ -12,7 +12,7 @@ res <- boosting.tests(spam)
 
 cols=brewer.pal(4,"Spectral")
 pdf('adaBoost.pdf') 
-plot(res[,1:2], ylab = 'error rate', ylim = c(0, 0.25), xlab = 'boosting iterations', type = 'l', col = cols[1], lwd = 2.5)
+plot(res[,1:2], ylab = 'Error Rate', ylim = c(0, 0.25), xlab = 'Boosting Iterations', type = 'l', col = cols[1], lwd = 2.5)
 lines(res[,c(1,3)], col = cols[2], lwd = 2.5)
 lines(res[,c(1,4)], col = cols[3], lwd = 2.5)
 lines(res[,c(1,5)], col = cols[4], lwd = 2.5)
