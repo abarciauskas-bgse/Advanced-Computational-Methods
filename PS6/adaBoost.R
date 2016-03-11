@@ -1,6 +1,6 @@
 if (!require('rpart')) install.packages('rpart')
 if (!require('formula.tools')) install.packages('formula.tools')
-source('makePredictions.R')
+source('adaboostPredict.R')
 
 # example:
 # res <- adaBoost(formula = (X1 ~ .), data = train.spam)
@@ -16,41 +16,44 @@ adaBoost <- function(formula = formula(), data = matrix(), depth = 1, noTrees = 
   if (feature.columns == '.') {
     feature.columns <- setdiff(colnames(data), y.column)
   }
-  data.y <- data[,y.column]
+  (formula <- as.formula(paste(y.column, '~', paste(feature.columns, collapse = '+'))))
+  data.y <- as.factor(data[,y.column])
   data.x <- data[,feature.columns]
-
+  data <- cbind(data.y, data.x)
+  colnames(data)[1] <- y.column
+  # Step 1: for m in 1 to M
   for (tree.idx in 1:noTrees) {
-    # create a stump
+    # Fit a classifier G_m(x)
     stump <- rpart(
       formula = formula,
       data = data,
       weights = weights,
-      control=rpart.control(maxdepth = depth))
+      control = rpart.control(maxdepth = depth))
 
     # fitted values of data
-    preds <- predict(stump, data)
-    preds <- as.factor(apply(preds, 1, which.max)-1)
+    preds <- predict(stump, data, type = 'class')
 
-    # compute error
-    errors.made <- preds != data.y
+    # compute error: 1 if mistake was made, 0 otherwise
+    errors.made <- ifelse(preds != data.y, 1, 0)
 
-    # compute the error of the stump
+    # compute the error of the classifier
     error <- sum(weights*errors.made)/sum(weights)
     # compute alpha
     alpha <- 0.5*log((1-error)/error)
-    
+    # store the m-th alpha
+    alphas[tree.idx] <- alpha
+
     # update weights
     weights <- weights*exp(alpha*errors.made)
 
-    # store the stump and alpha
+    # store the m-th classifer
     stumps <- append(stumps, list(stump))
-    alphas[tree.idx] <- alpha
   }
 
   # calculate final predictions
-  final.preds <- make.predictions(stumps, alphas, data)
+  final.preds <- adaboost.predict(stumps, alphas, data)
   return(list(stumps = stumps,
               alphas = alphas,
               predLabels = final.preds$preds,
-              train.error = final.preds$error.rate))
+              error = final.preds$error.rate))
 }

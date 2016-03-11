@@ -135,6 +135,7 @@ total.steps.sd <- sd(sapply(train.objects, function(obj) { obj$total.steps }))
 num.real.strokes.sd <- sd(sapply(train.objects, function(obj) { obj$num.real.strokes }))
 # we use this below, if within distribution, increase likelihood
 changes.sd <- sd(sapply(train.objects, function(obj) { obj$changes.in.direction }))
+# TODO: Add loops
 
 # create distribution of first major steps
 # 
